@@ -1,6 +1,8 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
 -- Настройки клавиши скрытия
 local toggleKey = Enum.KeyCode.RightShift
@@ -17,18 +19,18 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 -- Главное окно
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 350) -- Фиксированный удобный размер
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175) -- Центрирование по экрану
+MainFrame.Size = UDim2.new(0, 500, 0, 350)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 MainFrame.BorderSizePixel = 0
+MainFrame.Active = true -- Делает окно кликабельным
 MainFrame.Parent = ScreenGui
 
--- Закругление углов главного окна
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12) -- Небольшое аккуратное закругление
+MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
--- ВЕРХНЯЯ ПАНЕЛЬ ДЛЯ ПЕРЕТАСКИВАНИЯ (ДРАГ-СИСТЕМА)
+-- ВЕРХНЯЯ ПАНЕЛЬ ДЛЯ ПЕРЕТАСКИВАНИЯ
 local DragPanel = Instance.new("Frame")
 DragPanel.Name = "DragPanel"
 DragPanel.Size = UDim2.new(1, 0, 0, 35)
@@ -37,12 +39,10 @@ DragPanel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 DragPanel.BorderSizePixel = 0
 DragPanel.Parent = MainFrame
 
--- Закругление для верхней панели (чтобы не вылезала за края)
 local DragCorner = Instance.new("UICorner")
 DragCorner.CornerRadius = UDim.new(0, 12)
 DragCorner.Parent = DragPanel
 
--- Скрытие нижних углов верхней панели, чтобы дизайн был монолитным
 local HideCornerFix = Instance.new("Frame")
 HideCornerFix.Name = "HideCornerFix"
 HideCornerFix.Size = UDim2.new(1, 0, 0, 10)
@@ -51,7 +51,6 @@ HideCornerFix.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 HideCornerFix.BorderSizePixel = 0
 HideCornerFix.Parent = DragPanel
 
--- Название меню на верхней панели
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Name = "TitleLabel"
 TitleLabel.Size = UDim2.new(1, -20, 1, 0)
@@ -67,32 +66,86 @@ TitleLabel.Parent = DragPanel
 -- ВЕРТИКАЛЬНАЯ РАЗДЕЛИТЕЛЬНАЯ ЛИНИЯ
 local SeparatorLine = Instance.new("Frame")
 SeparatorLine.Name = "SeparatorLine"
-SeparatorLine.Size = UDim2.new(0, 1, 1, -35) -- На всю высоту под верхней панелью
-SeparatorLine.Position = UDim2.new(0, 160, 0, 35) -- Отделяет левые 160 пикселей
+SeparatorLine.Size = UDim2.new(0, 1, 1, -35)
+SeparatorLine.Position = UDim2.new(0, 160, 0, 35)
 SeparatorLine.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 SeparatorLine.BorderSizePixel = 0
 SeparatorLine.Parent = MainFrame
 
--- ОКНО ФУНКЦИЙ (Правая основная часть)
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
-ContentFrame.Size = UDim2.new(1, -161, 1, -35)
-ContentFrame.Position = UDim2.new(0, 161, 0, 35)
-ContentFrame.BackgroundTransparency = 1
-ContentFrame.Parent = MainFrame
+-- КОНТЕНТНЫЕ ЗОНЫ (ВКЛАДКИ)
+local KeybindsTab = Instance.new("Frame")
+KeybindsTab.Name = "KeybindsTab"
+KeybindsTab.Size = UDim2.new(1, -161, 1, -35)
+KeybindsTab.Position = UDim2.new(0, 161, 0, 35)
+KeybindsTab.BackgroundTransparency = 1
+KeybindsTab.Visible = true -- По умолчанию открыты кейбинды
+KeybindsTab.Parent = MainFrame
 
--- Текст-заглушка внутри окна функций
-local InfoLabel = Instance.new("TextLabel")
-InfoLabel.Name = "InfoLabel"
-InfoLabel.Size = UDim2.new(1, 0, 1, 0)
-InfoLabel.BackgroundTransparency = 1
-InfoLabel.Text = "Select a tab from the left side"
-InfoLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
-InfoLabel.Font = Enum.Font.SourceSansItalic
-InfoLabel.TextSize = 18
-InfoLabel.Parent = ContentFrame
+local MiscTab = Instance.new("Frame")
+MiscTab.Name = "MiscTab"
+MiscTab.Size = UDim2.new(1, -161, 1, -35)
+MiscTab.Position = UDim2.new(0, 161, 0, 35)
+MiscTab.BackgroundTransparency = 1
+MiscTab.Visible = false -- Изначально скрыта
+MiscTab.Parent = MainFrame
 
--- КОНТЕЙНЕР ДЛЯ ПРОФИЛЯ (Слева снизу)
+-- Содержимое вкладки Keybinds
+local KeybindsInfo = Instance.new("TextLabel")
+KeybindsInfo.Size = UDim2.new(1, 0, 1, 0)
+KeybindsInfo.BackgroundTransparency = 1
+KeybindsInfo.Text = "Используйте кнопку слева для смены бинда"
+KeybindsInfo.TextColor3 = Color3.fromRGB(150, 150, 150)
+KeybindsInfo.Font = Enum.Font.SourceSans
+KeybindsInfo.TextSize = 16
+KeybindsInfo.Parent = KeybindsTab
+
+-- СОДЕРЖИМОЕ ВКЛАДКИ MISC (ПОЛЗУНОК FOV)
+local SliderContainer = Instance.new("Frame")
+SliderContainer.Name = "SliderContainer"
+SliderContainer.Size = UDim2.new(0, 300, 0, 50)
+SliderContainer.Position = UDim2.new(0.5, -150, 0, 30)
+SliderContainer.BackgroundTransparency = 1
+SliderContainer.Parent = MiscTab
+
+local SliderTitle = Instance.new("TextLabel")
+SliderTitle.Name = "SliderTitle"
+SliderTitle.Size = UDim2.new(1, 0, 0, 20)
+SliderTitle.BackgroundTransparency = 1
+SliderTitle.Text = "Field of View (FOV): " .. math.round(Camera.FieldOfView)
+SliderTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+SliderTitle.Font = Enum.Font.SourceSansSemibold
+SliderTitle.TextSize = 15
+SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
+SliderTitle.Parent = SliderContainer
+
+local SliderBackground = Instance.new("Frame")
+SliderBackground.Name = "SliderBackground"
+SliderBackground.Size = UDim2.new(1, 0, 0, 6)
+SliderBackground.Position = UDim2.new(0, 0, 0, 28)
+SliderBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SliderBackground.BorderSizePixel = 0
+SliderBackground.Parent = SliderContainer
+
+local SliderFill = Instance.new("Frame")
+SliderFill.Name = "SliderFill"
+SliderFill.Size = UDim2.new(0.3, 0, 1, 0) -- Изначальное заполнение
+SliderFill.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
+SliderFill.BorderSizePixel = 0
+SliderFill.Parent = SliderBackground
+
+local SliderButton = Instance.new("ImageButton")
+SliderButton.Name = "SliderButton"
+SliderButton.Size = UDim2.new(0, 14, 0, 14)
+SliderButton.Position = UDim2.new(0.3, -7, 0.5, -7)
+SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+SliderButton.BorderSizePixel = 0
+SliderButton.Parent = SliderBackground
+
+local ButtonCorner = Instance.new("UICorner")
+ButtonCorner.CornerRadius = UDim.new(0.5, 0)
+ButtonCorner.Parent = SliderButton
+
+-- ПРОФИЛЬ ИГРОКА (Слева снизу)
 local ProfileFrame = Instance.new("Frame")
 ProfileFrame.Name = "ProfileFrame"
 ProfileFrame.Size = UDim2.new(0, 150, 0, 60)
@@ -130,22 +183,6 @@ UsernameLabel.Font = Enum.Font.SourceSansBold
 UsernameLabel.TextSize = 16
 UsernameLabel.Parent = ProfileFrame
 
--- ЛЕВАЯ КНОПКА: KEYBINDS
-local KeybindsButton = Instance.new("TextButton")
-KeybindsButton.Name = "KeybindsButton"
-KeybindsButton.Size = UDim2.new(0, 140, 0, 32)
-KeybindsButton.Position = UDim2.new(0, 10, 0, 95)
-KeybindsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-KeybindsButton.Text = "Bind: " .. toggleKey.Name
-KeybindsButton.TextColor3 = Color3.fromRGB(240, 240, 240)
-KeybindsButton.Font = Enum.Font.SourceSansSemibold
-KeybindsButton.TextSize = 15
-KeybindsButton.Parent = MainFrame
-
-local KeybindsCorner = Instance.new("UICorner")
-KeybindsCorner.CornerRadius = UDim.new(0, 6)
-KeybindsCorner.Parent = KeybindsButton
-
 -- ЛЕВАЯ КНОПКА: MISC
 local MiscButton = Instance.new("TextButton")
 MiscButton.Name = "MiscButton"
@@ -162,17 +199,61 @@ local MiscCorner = Instance.new("UICorner")
 MiscCorner.CornerRadius = UDim.new(0, 6)
 MiscCorner.Parent = MiscButton
 
+-- ЛЕВАЯ КНОПКА: KEYBINDS
+local KeybindsButton = Instance.new("TextButton")
+KeybindsButton.Name = "KeybindsButton"
+KeybindsButton.Size = UDim2.new(0, 140, 0, 32)
+KeybindsButton.Position = UDim2.new(0, 10, 0, 95)
+KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70) -- Подсвечена, т.к. активна изначально
+KeybindsButton.Text = "Bind: " .. toggleKey.Name
+KeybindsButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+KeybindsButton.Font = Enum.Font.SourceSansSemibold
+KeybindsButton.TextSize = 15
+KeybindsButton.Parent = MainFrame
+
+local KeybindsCorner = Instance.new("UICorner")
+KeybindsCorner.CornerRadius = UDim.new(0, 6)
+KeybindsCorner.Parent = KeybindsButton
+
 
 -- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
--- 1. Скрытие/Показ и смена бинда
+-- 1. Переключение вкладок
+MiscButton.MouseButton1Click:Connect(function()
+	MiscTab.Visible = true
+	KeybindsTab.Visible = false
+	MiscButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	KeybindsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+end)
+
+KeybindsButton.MouseButton1Click:Connect(function()
+	if not isListeningForKey then
+		isListeningForKey = true
+		KeybindsButton.Text = "Press any key..."
+	end
+end)
+
+-- Сброс состояния кнопки бинда при клике мимо, если нужно переключить вкладку
+KeybindsButton.MouseButton2Click:Connect(function()
+	MiscTab.Visible = false
+	KeybindsTab.Visible = true
+	KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+end)
+
+-- 2. Скрытие/Показ и Смена Бинда
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
+	
 	if isListeningForKey then
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			toggleKey = input.KeyCode
 			isListeningForKey = false
 			KeybindsButton.Text = "Bind: " .. toggleKey.Name
+			MiscTab.Visible = false
+			KeybindsTab.Visible = true
+			KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+			MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 		end
 	else
 		if input.KeyCode == toggleKey then
@@ -181,46 +262,118 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
-KeybindsButton.MouseButton1Click:Connect(function()
-	isListeningForKey = true
-	KeybindsButton.Text = "Press any key..."
-end)
+-- 3. РАБОТА ПОЛЗУНКА (FOV: 50 - 120)
+local minFov = 50
+local maxFov = 120
+local isSliding = false
 
-MiscButton.MouseButton1Click:Connect(function()
-	InfoLabel.Text = "Misc Tab Opened"
-	print("Вкладка Misc активирована!")
-end)
+local function updateSlider(input)
+	local mousePos = input.Position.X
+	local barPos = SliderBackground.AbsolutePosition.X
+	local barSize = SliderBackground.AbsoluteSize.X
+	
+	-- Вычисление процента заполнения (от 0 до 1)
+	local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
+	
+	SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+	SliderButton.Position = UDim2.new(percentage, -7, 0.5, -7)
+	
+	-- Рассчет и применение FOV
+-- Обязательно объявите службы и переменные, если они не объявлены выше
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
 
--- 2. Скрипт перетаскивания (Drag System) для верхней полоски
-local dragging, dragInput, dragStart, startPos
+-- Настройки FOV (измените под свои нужды)
+local minFov = 70
+local maxFov = 120
 
-local function update(input)
-	local delta = input.Position - dragStart
-	MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+local isSliding = false
+local dragToggle = false
+local dragStart = Vector2.new()
+local startPos = UDim2.new()
+
+-- 1. ФУНКЦИЯ ОБНОВЛЕНИЯ ПОЛЗУНКА (SLIDER)
+local function updateSlider(input)
+    -- Получаем позицию клика/касания относительно контейнера ползунка (SliderFrame)
+    -- Для этого из позиции ввода вычитаем абсолютную позицию самого трека ползунка
+    local sliderAbsolutePosition = SliderFrame.AbsolutePosition
+    local sliderAbsoluteSize = SliderFrame.AbsoluteSize
+    
+    local inputPositionX = input.Position.X
+    if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement then
+        inputPositionX = UserInputService:GetMouseLocation().X
+    end
+    
+    -- Вычисляем процент заполнения (от 0 до 1)
+    local percentage = math.clamp((inputPositionX - sliderAbsolutePosition.X) / sliderAbsoluteSize.X, 0, 1)
+    
+    -- Визуальное обновление ползунка
+    SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+    SliderButton.Position = UDim2.new(percentage, -7, 0.5, -7)
+    
+    -- Логика изменения FOV
+    local currentFov = minFov + (percentage * (maxFov - minFov))
+    Camera.FieldOfView = currentFov
+    SliderTitle.Text = "Field of View (FOV): " .. math.round(currentFov)
 end
 
-DragPanel.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		dragStart = input.Position
-		startPos = MainFrame.Position
-		
-		input.Changed:Connect(function()
-			if input.UserInputState == Enum.UserInputState.End then
-				dragging = false
-			end
-		end)
-	end
+-- События для управления ползунком
+SliderButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isSliding = true
+        updateSlider(input) -- Обновляем сразу при клике
+    end
 end)
 
-DragPanel.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-		dragInput = input
-	end
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        isSliding = false
+    end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if input == dragInput and dragging then
-		update(input)
-	end
+    if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateSlider(input)
+    end
+end)
+
+-- Установка начального положения ползунка под текущий FOV камеры
+local initialPercentage = math.clamp((Camera.FieldOfView - minFov) / (maxFov - minFov), 0, 1)
+SliderFill.Size = UDim2.new(initialPercentage, 0, 1, 0)
+SliderButton.Position = UDim2.new(initialPercentage, -7, 0.5, -7)
+SliderTitle.Text = "Field of View (FOV): " .. math.round(Camera.FieldOfView)
+
+
+-- 2. СТАБИЛЬНАЯ СИСТЕМА ПЕРЕТАСКИВАНИЯ ОКНА (DRAG)
+DragPanel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = true
+        dragStart = UserInputService:GetMouseLocation()
+        startPos = MainFrame.Position
+        
+        -- Безопасный сброс, если игрок отпустил мышь за пределами экрана/панели
+        local connection
+        connection = input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragToggle = false
+                connection:Disconnect()
+            end
+        end)
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if dragToggle then
+        local mousePos = UserInputService:GetMouseLocation()
+        -- Использование GetMouseLocation для обеих точек избавляет от бага со смещением Topbar (36px)
+        local delta = mousePos - dragStart
+        
+        MainFrame.Position = UDim2.new(
+            startPos.X.Scale, 
+            startPos.X.Offset + delta.X, 
+            startPos.Y.Scale, 
+            startPos.Y.Offset + delta.Y
+        )
+    end
 end)
