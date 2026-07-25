@@ -233,6 +233,7 @@ KeybindsButton.Parent = MainFrame
 local KeybindsCorner = Instance.new("UICorner")
 KeybindsCorner.CornerRadius = UDim.new(0, 6)
 KeybindsCorner.Parent = KeybindsButton
+
 -- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
 local silentAimFOV = 100 -- Скрытый радиус захвата вокруг курсора (в пикселях)
