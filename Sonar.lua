@@ -15,7 +15,7 @@ ScreenGui.DisplayOrder = 999999999
 ScreenGui.IgnoreGuiInset = true 
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Главное окно (увеличили высоту до 380, чтобы влезла третья кнопка)
+-- Главное окно
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 500, 0, 380)
@@ -81,7 +81,6 @@ MiscTab.BackgroundTransparency = 1
 MiscTab.Visible = false
 MiscTab.Parent = MainFrame
 
--- НОВАЯ ВКЛАДКА: TARGET TAB
 local TargetTab = Instance.new("Frame")
 TargetTab.Size = UDim2.new(1, -161, 1, -35)
 TargetTab.Position = UDim2.new(0, 161, 0, 35)
@@ -98,64 +97,10 @@ KeybindsInfo.Font = Enum.Font.SourceSans
 KeybindsInfo.TextSize = 15
 KeybindsInfo.Parent = KeybindsTab
 
--- Элементы внутри вкладки Target
-local TargetInput = Instance.new("TextBox")
-TargetInput.Size = UDim2.new(0, 200, 0, 30)
-TargetInput.Position = UDim2.new(0, 20, 0, 20)
-TargetInput.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-TargetInput.PlaceholderText = "Введите ник игрока..."
-TargetInput.Text = ""
-TargetInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetInput.Font = Enum.Font.SourceSans
-TargetInput.TextSize = 14
-TargetInput.Parent = TargetTab
+-- ================= ВКЛАДКА MISC (FOV СЛАЙДЕР) =================
 
-local InputCorner = Instance.new("UICorner")
-InputCorner.CornerRadius = UDim.new(0, 6)
-InputCorner.Parent = TargetInput
-
-local AddTargetBtn = Instance.new("TextButton")
-AddTargetBtn.Size = UDim2.new(0, 90, 0, 30)
-AddTargetBtn.Position = UDim2.new(0, 230, 0, 20)
-AddTargetBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 200)
-AddTargetBtn.Text = "Add Target"
-AddTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-AddTargetBtn.Font = Enum.Font.SourceSansBold
-AddTargetBtn.TextSize = 14
-AddTargetBtn.Parent = TargetTab
-
-local AddCorner = Instance.new("UICorner")
-AddCorner.CornerRadius = UDim.new(0, 6)
-AddCorner.Parent = AddTargetBtn
-
-local TargetListLabel = Instance.new("TextLabel")
-TargetListLabel.Size = UDim2.new(0, 300, 0, 20)
-TargetListLabel.Position = UDim2.new(0, 20, 0, 65)
-TargetListLabel.BackgroundTransparency = 1
-TargetListLabel.Text = "Текущие цели: Нет"
-TargetListLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-TargetListLabel.Font = Enum.Font.SourceSansItalic
-TargetListLabel.TextSize = 14
-TargetListLabel.TextXAlignment = Enum.TextXAlignment.Left
-TargetListLabel.Parent = TargetTab
-
-local KillTargetBtn = Instance.new("TextButton")
-KillTargetBtn.Size = UDim2.new(0, 300, 0, 40)
-KillTargetBtn.Position = UDim2.new(0, 20, 0, 100)
-KillTargetBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-KillTargetBtn.Text = "KILL TARGET"
-KillTargetBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-KillTargetBtn.Font = Enum.Font.SourceSansBold
-KillTargetBtn.TextSize = 16
-KillTargetBtn.Parent = TargetTab
-
-local KillCorner = Instance.new("UICorner")
-KillCorner.CornerRadius = UDim.new(0, 8)
-KillCorner.Parent = KillTargetBtn
-
--- Ползунки во вкладке Misc (Оставили старые для FOV)
 local SliderContainer = Instance.new("Frame")
-SliderContainer.Size = UDim2.new(0, 300, 0, 50)
+SliderContainer.Size = UDim2.new(0, 300, 0, 60)
 SliderContainer.Position = UDim2.new(0.5, -150, 0, 20)
 SliderContainer.BackgroundTransparency = 1
 SliderContainer.Parent = MiscTab
@@ -170,23 +115,111 @@ SliderTitle.TextSize = 14
 SliderTitle.Parent = SliderContainer
 
 local SliderBackground = Instance.new("Frame")
-SliderBackground.Size = UDim2.new(1, 0, 0, 6)
-SliderBackground.Position = UDim2.new(0, 0, 0, 25)
+SliderBackground.Size = UDim2.new(1, 0, 0, 8)
+SliderBackground.Position = UDim2.new(0, 0, 0, 30)
 SliderBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+SliderBackground.BorderSizePixel = 0
 SliderBackground.Parent = SliderContainer
+
+local SliderBgCorner = Instance.new("UICorner")
+SliderBgCorner.CornerRadius = UDim.new(0, 4)
+SliderBgCorner.Parent = SliderBackground
 
 local SliderFill = Instance.new("Frame")
 SliderFill.Size = UDim2.new(0.3, 0, 1, 0)
 SliderFill.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
+SliderFill.BorderSizePixel = 0
 SliderFill.Parent = SliderBackground
 
+local SliderFillCorner = Instance.new("UICorner")
+SliderFillCorner.CornerRadius = UDim.new(0, 4)
+SliderFillCorner.Parent = SliderFill
+
 local SliderButton = Instance.new("ImageButton")
-SliderButton.Size = UDim2.new(0, 14, 0, 14)
-SliderButton.Position = UDim2.new(0.3, -7, 0.5, -7)
+SliderButton.Size = UDim2.new(0, 16, 0, 16)
+SliderButton.Position = UDim2.new(0.3, -8, 0.5, -8)
 SliderButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+SliderButton.Image = ""
 SliderButton.Parent = SliderBackground
 
--- Левые кнопки навигации
+local SliderBtnCorner = Instance.new("UICorner")
+SliderBtnCorner.CornerRadius = UDim.new(1, 0)
+SliderBtnCorner.Parent = SliderButton
+
+-- FOV Значения мин/макс
+local minFov = 30
+local maxFov = 120
+local defaultFov = Camera.FieldOfView
+local currentPercentage = (defaultFov - minFov) / (maxFov - minFov)
+
+-- Установка начальной позиции слайдера
+SliderFill.Size = UDim2.new(currentPercentage, 0, 1, 0)
+SliderButton.Position = UDim2.new(currentPercentage, -8, 0.5, -8)
+
+-- ================= ВКЛАДКА TARGET (ВЫПАДАЮЩИЙ СПИСОК + FLING) =================
+
+-- Выпадающий список игроков
+local PlayerDropdown = Instance.new("TextButton")
+PlayerDropdown.Size = UDim2.new(0, 280, 0, 32)
+PlayerDropdown.Position = UDim2.new(0, 20, 0, 20)
+PlayerDropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+PlayerDropdown.Text = "Выберите игрока..."
+PlayerDropdown.TextColor3 = Color3.fromRGB(200, 200, 200)
+PlayerDropdown.Font = Enum.Font.SourceSans
+PlayerDropdown.TextSize = 14
+PlayerDropdown.TextXAlignment = Enum.TextXAlignment.Left
+PlayerDropdown.Parent = TargetTab
+
+local DropdownCorner = Instance.new("UICorner")
+DropdownCorner.CornerRadius = UDim.new(0, 6)
+DropdownCorner.Parent = PlayerDropdown
+
+local DropArrow = Instance.new("TextLabel")
+DropArrow.Size = UDim2.new(0, 20, 1, 0)
+DropArrow.Position = UDim2.new(1, -25, 0, 0)
+DropArrow.BackgroundTransparency = 1
+DropArrow.Text = "▼"
+DropArrow.TextColor3 = Color3.fromRGB(150, 150, 150)
+DropArrow.Font = Enum.Font.SourceSansBold
+DropArrow.TextSize = 12
+DropArrow.Parent = PlayerDropdown
+
+-- Контейнер для элементов списка
+local DropList = Instance.new("ScrollingFrame")
+DropList.Size = UDim2.new(0, 280, 0, 160)
+DropList.Position = UDim2.new(0, 20, 0, 55)
+DropList.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+DropList.BorderSizePixel = 1
+DropList.BorderColor3 = Color3.fromRGB(60, 60, 60)
+DropList.Visible = false
+DropList.ScrollBarThickness = 4
+DropList.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+DropList.CanvasSize = UDim2.new(0, 0, 0, 0)
+DropList.Parent = TargetTab
+
+local DropListCorner = Instance.new("UICorner")
+DropListCorner.CornerRadius = UDim.new(0, 6)
+DropListCorner.Parent = DropList
+
+local DropListLayout = Instance.new("UIListLayout")
+DropListLayout.Padding = UDim.new(0, 2)
+DropListLayout.Parent = DropList
+
+-- Статус
+local TargetStatus = Instance.new("TextLabel")
+TargetStatus.Size = UDim2.new(0, 280, 0, 40)
+TargetStatus.Position = UDim2.new(0, 20, 0, 225)
+TargetStatus.BackgroundTransparency = 1
+TargetStatus.Text = "ЛКМ - захватить | ПКМ - выбросить (сила 10000)"
+TargetStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+TargetStatus.Font = Enum.Font.SourceSansItalic
+TargetStatus.TextSize = 12
+TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
+TargetStatus.TextWrapped = true
+TargetStatus.Parent = TargetTab
+
+-- ================= ЛЕВЫЕ КНОПКИ НАВИГАЦИИ =================
+
 local MiscButton = Instance.new("TextButton")
 MiscButton.Size = UDim2.new(0, 140, 0, 32)
 MiscButton.Position = UDim2.new(0, 10, 0, 50)
@@ -201,7 +234,6 @@ local MiscCorner = Instance.new("UICorner")
 MiscCorner.CornerRadius = UDim.new(0, 6)
 MiscCorner.Parent = MiscButton
 
--- КНОПКА НАВИГАЦИИ TARGET
 local TargetButton = Instance.new("TextButton")
 TargetButton.Size = UDim2.new(0, 140, 0, 32)
 TargetButton.Position = UDim2.new(0, 10, 0, 95)
@@ -218,7 +250,7 @@ TargetBtnCorner.Parent = TargetButton
 
 local KeybindsButton = Instance.new("TextButton")
 KeybindsButton.Size = UDim2.new(0, 140, 0, 32)
-KeybindsButton.Position = UDim2.new(0, 10, 0, 140) -- Сместилась вниз
+KeybindsButton.Position = UDim2.new(0, 10, 0, 140)
 KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 KeybindsButton.Text = "Bind: " .. toggleKey.Name
 KeybindsButton.TextColor3 = Color3.fromRGB(240, 240, 240)
@@ -230,7 +262,8 @@ local KeybindsCorner = Instance.new("UICorner")
 KeybindsCorner.CornerRadius = UDim.new(0, 6)
 KeybindsCorner.Parent = KeybindsButton
 
--- Профиль игрока (сместился в самый низ)
+-- ================= ПРОФИЛЬ ИГРОКА =================
+
 local ProfileFrame = Instance.new("Frame")
 ProfileFrame.Size = UDim2.new(0, 150, 0, 60)
 ProfileFrame.Position = UDim2.new(0, 10, 1, -70)
@@ -261,44 +294,51 @@ UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
 UsernameLabel.Font = Enum.Font.SourceSansBold
 UsernameLabel.TextSize = 16
 UsernameLabel.Parent = ProfileFrame
--- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
-local targetsList = {}
+-- ================= ЛОГИКА =================
 
 -- Переключение вкладок
 MiscButton.MouseButton1Click:Connect(function()
-	MiscTab.Visible = true; KeybindsTab.Visible = false; TargetTab.Visible = false
+	MiscTab.Visible = true
+	KeybindsTab.Visible = false
+	TargetTab.Visible = false
 	MiscButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	KeybindsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
 TargetButton.MouseButton1Click:Connect(function()
-	MiscTab.Visible = false; KeybindsTab.Visible = false; TargetTab.Visible = true
+	MiscTab.Visible = false
+	KeybindsTab.Visible = false
+	TargetTab.Visible = true
 	TargetButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	KeybindsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
 KeybindsButton.MouseButton1Click:Connect(function()
+	MiscTab.Visible = false
+	KeybindsTab.Visible = true
+	TargetTab.Visible = false
+	KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	
 	if not isListeningForKey then
 		isListeningForKey = true
 		KeybindsButton.Text = "Press any key..."
 	end
 end)
 
--- Скрытие / Показ меню и смена бинда
+-- Скрытие / Показ меню
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
+	
 	if isListeningForKey then
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			toggleKey = input.KeyCode
 			isListeningForKey = false
 			KeybindsButton.Text = "Bind: " .. toggleKey.Name
-			MiscTab.Visible = false; TargetTab.Visible = false; KeybindsTab.Visible = true
-			KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-			MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-			TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 		end
 	else
 		if input.KeyCode == toggleKey then
@@ -307,114 +347,303 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- Логика добавления игроков в список целей
-AddTargetBtn.MouseButton1Click:Connect(function()
-	local inputText = string.lower(TargetInput.Text)
-	if inputText == "" then return end
-	
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and string.find(string.lower(player.Name), inputText) or string.find(string.lower(player.DisplayName), inputText) then
-			if not table.find(targetsList, player) then
-				table.insert(targetsList, player)
-				TargetListLabel.Text = "Цель добавлена: " .. player.Name
-				TargetInput.Text = ""
-				return
-			end
-		end
-	end
-	TargetListLabel.Text = "Игрок не найден!"
-end)
+-- ================= FOV СЛАЙДЕР ЛОГИКА =================
 
--- ФУНКЦИЯ KILL TARGET (Мгновенное физическое устранение/выбрасывание через флинг)
-local function flingPlayer(targetPlayer)
-	if not targetPlayer or not targetPlayer.Character or not LocalPlayer.Character then return end
-	
-	local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-	local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	local localHumanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-	
-	if targetRoot and localRoot and localHumanoid then
-		-- Сохраняем исходную позицию локального игрока, чтобы вернуться после килла
-		local originalCFrame = localRoot.CFrame
-		
-		-- Отключаем падение в рэгдолл на долю секунды для точности
-		localHumanoid.PlatformStand = true
-		
-		-- Включаем безумную угловую скорость для создания невидимого физического торнадо
-		local Velocity = Instance.new("BodyAngularVelocity")
-		Velocity.MaxTorque = Vector3.new(1, 1, 1) * math.huge
-		Velocity.P = math.huge
-		Velocity.AngularVelocity = Vector3.new(10000, 10000, 10000) -- Огромная скорость вращения
-		Velocity.Parent = localRoot
-		
-		-- Серия микро-телепортаций в цель для симуляции сокрушительного физического удара (fling)
-		for i = 1, 25 do
-			if targetRoot and localRoot then
-				localRoot.CFrame = targetRoot.CFrame + Vector3.new(math.random(-1,1)/10, 0, math.random(-1,1)/10)
-				task.wait()
-			end
-		end
-		
-		-- Наводим порядок: убираем физическую силу и возвращаем на место
-		Velocity:Destroy()
-		localHumanoid.PlatformStand = false
-		localRoot.CFrame = originalCFrame
-	end
-end
-
--- Обработка нажатия на главную кнопку KILL TARGET
-KillTargetBtn.MouseButton1Click:Connect(function()
-	if #targetsList == 0 then
-		TargetListLabel.Text = "Сначала добавьте цель!"
-		return
-	end
-	
-	TargetListLabel.Text = "Атака целей..."
-	for _, targetPlayer in ipairs(targetsList) do
-		flingPlayer(targetPlayer)
-	end
-	
-	-- Очищаем список после выполнения атаки
-	targetsList = {}
-	TargetListLabel.Text = "Цели успешно уничтожены/удалены."
-end)
-
--- Слайдер FOV (из прошлых версий)
 local isSliding = false
+
 SliderButton.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then isSliding = true end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isSliding = true
+	end
 end)
+
 UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then isSliding = false end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isSliding = false
+	end
 end)
+
 UserInputService.InputChanged:Connect(function(input)
 	if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
 		local mousePos = input.Position.X
 		local barPos = SliderBackground.AbsolutePosition.X
 		local barSize = SliderBackground.AbsoluteSize.X
 		local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
+		
 		SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-		SliderButton.Position = UDim2.new(percentage, -7, 0.5, -7)
-		local currentFov = 50 + (percentage * 70)
+		SliderButton.Position = UDim2.new(percentage, -8, 0.5, -8)
+		
+		local currentFov = minFov + (percentage * (maxFov - minFov))
 		Camera.FieldOfView = currentFov
 		SliderTitle.Text = "Field of View (FOV): " .. math.round(currentFov)
 	end
 end)
 
--- Стабильное перетаскивание
-local dragToggle, dragStart, startPos = nil, nil, nil
-DragPanel.InputBegan:Connect(function(input)
+-- Клик по полосе слайдера
+SliderBackground.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		dragToggle = true; dragStart = input.Position; startPos = MainFrame.Position
+		isSliding = true
+		local mousePos = UserInputService:GetMouseLocation().X
+		local barPos = SliderBackground.AbsolutePosition.X
+		local barSize = SliderBackground.AbsoluteSize.X
+		local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
+		
+		SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
+		SliderButton.Position = UDim2.new(percentage, -8, 0.5, -8)
+		
+		local currentFov = minFov + (percentage * (maxFov - minFov))
+		Camera.FieldOfView = currentFov
+		SliderTitle.Text = "Field of View (FOV): " .. math.round(currentFov)
 	end
 end)
-DragPanel.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragToggle = false end
+
+-- ================= TARGET: ВЫПАДАЮЩИЙ СПИСОК ЛОГИКА =================
+
+local selectedTarget = nil
+local grabbedPlayer = nil
+local originalCFrame = nil
+local noclipConnection = nil
+
+local function updatePlayerList()
+	for _, child in ipairs(DropList:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	
+	local totalHeight = 0
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			local btn = Instance.new("TextButton")
+			btn.Size = UDim2.new(1, -4, 0, 28)
+			btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+			btn.Text = player.Name
+			btn.TextColor3 = Color3.fromRGB(230, 230, 230)
+			btn.Font = Enum.Font.SourceSans
+			btn.TextSize = 13
+			btn.TextXAlignment = Enum.TextXAlignment.Left
+			btn.Parent = DropList
+			
+			local btnCorner = Instance.new("UICorner")
+			btnCorner.CornerRadius = UDim.new(0, 4)
+			btnCorner.Parent = btn
+			
+			btn.MouseButton1Click:Connect(function()
+				selectedTarget = player
+				PlayerDropdown.Text = "Цель: " .. player.Name
+				DropList.Visible = false
+			end)
+			
+			totalHeight = totalHeight + 30
+		end
+	end
+	DropList.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
+end
+
+updatePlayerList()
+
+PlayerDropdown.MouseButton1Click:Connect(function()
+	updatePlayerList()
+	DropList.Visible = not DropList.Visible
 end)
-RunService.RenderStepped:Connect(function()
-	if dragToggle then
+
+-- Закрытие списка при клике вне
+UserInputService.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if DropList.Visible then
+			local mousePos = UserInputService:GetMouseLocation()
+			local listPos = DropList.AbsolutePosition
+			local listSize = DropList.AbsoluteSize
+			local dropPos = PlayerDropdown.AbsolutePosition
+			local dropSize = PlayerDropdown.AbsoluteSize
+			
+			if not (
+				(mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X and
+				 mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y) or
+				(mousePos.X >= dropPos.X and mousePos.X <= dropPos.X + dropSize.X and
+				 mousePos.Y >= dropPos.Y and mousePos.Y <= dropPos.Y + dropSize.Y)
+			) then
+				DropList.Visible = false
+			end
+		end
+	end
+end)
+
+-- ================= TARGET: FLING ЛОГИКА =================
+
+local function enableNoclip()
+	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		noclipConnection = RunService.Stepped:Connect(function()
+			if LocalPlayer.Character then
+				for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+					if part:IsA("BasePart") and part.CanCollide == true then
+						part.CanCollide = false
+					end
+				end
+			end
+		end)
+	end
+end
+
+local function disableNoclip()
+	if noclipConnection then
+		noclipConnection:Disconnect()
+		noclipConnection = nil
+	end
+	if LocalPlayer.Character then
+		for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true
+			end
+		end
+	end
+end
+
+local function grabTarget()
+	if not selectedTarget then
+		TargetStatus.Text = "Сначала выберите игрока из списка!"
+		return
+	end
+	if not selectedTarget.Character or not selectedTarget.Character:FindFirstChild("HumanoidRootPart") then
+		TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " не на карте!"
+		return
+	end
+	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	
+	if grabbedPlayer == selectedTarget then
+		TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " уже захвачен! ПКМ - выбросить."
+		return
+	end
+	
+	local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	originalCFrame = localRoot.CFrame
+	
+	enableNoclip()
+	
+	local targetRoot = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
+	localRoot.CFrame = targetRoot.CFrame * CFrame.new(0, -3, 0)
+	
+	-- Удаляем старый weld если есть
+	local oldWeld = localRoot:FindFirstChild("GrabWeld")
+	if oldWeld then
+		oldWeld:Destroy()
+	end
+	
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = localRoot
+	weld.Part1 = targetRoot
+	weld.Parent = localRoot
+	weld.Name = "GrabWeld"
+	
+	grabbedPlayer = selectedTarget
+	
+	TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " захвачен! ПКМ - выбросить вверх (сила 10000)."
+end
+
+local function flingTarget()
+	if not grabbedPlayer then
+		TargetStatus.Text = "Некого выбрасывать! Сначала захватите ЛКМ."
+		return
+	end
+	if not grabbedPlayer.Character or not grabbedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		TargetStatus.Text = "Игрок уже не на карте."
+		grabbedPlayer = nil
+		return
+	end
+	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		return
+	end
+	
+	local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+	
+	local weld = localRoot:FindFirstChild("GrabWeld")
+	if weld then
+		weld:Destroy()
+	end
+	
+	local targetRoot = grabbedPlayer.Character:FindFirstChild("HumanoidRootPart")
+	
+	if targetRoot then
+		local bv = Instance.new("BodyVelocity")
+		bv.MaxForce = Vector3.new(1, 1, 1) * 10^6
+		bv.Velocity = Vector3.new(0, 10000, 0)
+		bv.P = 10^5
+		bv.Parent = targetRoot
+		
+		task.delay(0.1, function()
+			if bv then bv:Destroy() end
+		end)
+	end
+	
+	local targetName = grabbedPlayer.Name
+	grabbedPlayer = nil
+	
+	TargetStatus.Text = "Игрок " .. targetName .. " выброшен с силой 10000 вверх! Возвращаемся..."
+	
+	task.wait(0.05)
+	if originalCFrame and localRoot then
+		localRoot.CFrame = originalCFrame
+	end
+	disableNoclip()
+	originalCFrame = nil
+	TargetStatus.Text = "Готов. ЛКМ - захватить | ПКМ - выбросить (сила 10000)"
+end
+
+-- Привязка захвата/выброса к кнопкам мыши (только когда открыта вкладка Target)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if not MainFrame.Visible then return end
+	if not TargetTab.Visible then return end
+	
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		-- Проверяем что клик не по GUI элементам
 		local mousePos = UserInputService:GetMouseLocation()
-		local delta = mousePos - Vector2.new(dragStart.X, dragStart.Y - 36)
+		local guiObjects = LocalPlayer.PlayerGui:FindFirstChild("SolarMenuGui")
+		if guiObjects then
+			for _, obj in ipairs(guiObjects:GetDescendants()) do
+				if obj:IsA("GuiButton") and obj.AbsolutePosition.X <= mousePos.X and obj.AbsolutePosition.X + obj.AbsoluteSize.X >= mousePos.X and
+				   obj.AbsolutePosition.Y <= mousePos.Y and obj.AbsolutePosition.Y + obj.AbsoluteSize.Y >= mousePos.Y and obj.Visible then
+					return
+				end
+			end
+		end
+		grabTarget()
+		
+	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
+		flingTarget()
+	end
+end)
+
+-- Очистка при смерти
+LocalPlayer.CharacterAdded:Connect(function()
+	grabbedPlayer = nil
+	originalCFrame = nil
+	disableNoclip()
+end)
+
+-- ================= ПЕРЕТАСКИВАНИЕ ОКНА =================
+
+local dragToggle, dragStart, startPos = nil, nil, nil
+
+DragPanel.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragToggle = true
+		dragStart = input.Position
+		startPos = MainFrame.Position
+	end
+end)
+
+DragPanel.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragToggle = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
 		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
 end)
