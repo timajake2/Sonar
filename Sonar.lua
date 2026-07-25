@@ -7,7 +7,7 @@ local Camera = workspace.CurrentCamera
 local toggleKey = Enum.KeyCode.RightShift
 local isListeningForKey = false
 
--- Создание UI (Поверх всех окон)
+-- Создание UI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "PremiumMenuGui"
 ScreenGui.ResetOnSpawn = false
@@ -29,7 +29,7 @@ local MainCorner = Instance.new("UICorner")
 MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainFrame
 
--- Верхняя панель перетаскивания
+-- Верхняя панель "Solar"
 local DragPanel = Instance.new("Frame")
 DragPanel.Name = "DragPanel"
 DragPanel.Size = UDim2.new(1, 0, 0, 35)
@@ -59,7 +59,7 @@ TitleLabel.TextSize = 16
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = DragPanel
 
--- Вертикальная разделительная линия
+-- Разделитель
 local SeparatorLine = Instance.new("Frame")
 SeparatorLine.Size = UDim2.new(0, 1, 1, -35)
 SeparatorLine.Position = UDim2.new(0, 160, 0, 35)
@@ -67,7 +67,7 @@ SeparatorLine.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 SeparatorLine.BorderSizePixel = 0
 SeparatorLine.Parent = MainFrame
 
--- Вкладки контента
+-- Вкладки
 local KeybindsTab = Instance.new("Frame")
 KeybindsTab.Size = UDim2.new(1, -161, 1, -35)
 KeybindsTab.Position = UDim2.new(0, 161, 0, 35)
@@ -91,10 +91,10 @@ KeybindsInfo.Font = Enum.Font.SourceSans
 KeybindsInfo.TextSize = 15
 KeybindsInfo.Parent = KeybindsTab
 
--- Настройка Ползунка FOV
+-- [ПОЛЗУНОК 1: FOV]
 local SliderContainer = Instance.new("Frame")
 SliderContainer.Size = UDim2.new(0, 300, 0, 50)
-SliderContainer.Position = UDim2.new(0.5, -150, 0, 30)
+SliderContainer.Position = UDim2.new(0.5, -150, 0, 20)
 SliderContainer.BackgroundTransparency = 1
 SliderContainer.Parent = MiscTab
 
@@ -104,13 +104,13 @@ SliderTitle.BackgroundTransparency = 1
 SliderTitle.Text = "Field of View (FOV): " .. math.round(Camera.FieldOfView)
 SliderTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 SliderTitle.Font = Enum.Font.SourceSansSemibold
-SliderTitle.TextSize = 15
+SliderTitle.TextSize = 14
 SliderTitle.TextXAlignment = Enum.TextXAlignment.Left
 SliderTitle.Parent = SliderContainer
 
 local SliderBackground = Instance.new("Frame")
 SliderBackground.Size = UDim2.new(1, 0, 0, 6)
-SliderBackground.Position = UDim2.new(0, 0, 0, 28)
+SliderBackground.Position = UDim2.new(0, 0, 0, 25)
 SliderBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 SliderBackground.BorderSizePixel = 0
 SliderBackground.Parent = SliderContainer
@@ -132,7 +132,48 @@ local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(0.5, 0)
 ButtonCorner.Parent = SliderButton
 
--- Профиль игрока
+-- [ПОЛЗУНОК 2: HITBOX EXPANDER]
+local HitboxContainer = Instance.new("Frame")
+HitboxContainer.Size = UDim2.new(0, 300, 0, 50)
+HitboxContainer.Position = UDim2.new(0.5, -150, 0, 85)
+HitboxContainer.BackgroundTransparency = 1
+HitboxContainer.Parent = MiscTab
+
+local HitboxTitle = Instance.new("TextLabel")
+HitboxTitle.Size = UDim2.new(1, 0, 0, 20)
+HitboxTitle.BackgroundTransparency = 1
+HitboxTitle.Text = "Hitbox Size (Silent Aim): 2"
+HitboxTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+HitboxTitle.Font = Enum.Font.SourceSansSemibold
+HitboxTitle.TextSize = 14
+HitboxTitle.TextXAlignment = Enum.TextXAlignment.Left
+HitboxTitle.Parent = HitboxContainer
+
+local HitboxBackground = Instance.new("Frame")
+HitboxBackground.Size = UDim2.new(1, 0, 0, 6)
+HitboxBackground.Position = UDim2.new(0, 0, 0, 25)
+HitboxBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+HitboxBackground.BorderSizePixel = 0
+HitboxBackground.Parent = HitboxContainer
+
+local HitboxFill = Instance.new("Frame")
+HitboxFill.Size = UDim2.new(0, 0, 1, 0)
+HitboxFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60) -- Красный цвет для хитбоксов
+HitboxFill.BorderSizePixel = 0
+HitboxFill.Parent = HitboxBackground
+
+local HitboxButton = Instance.new("ImageButton")
+HitboxButton.Size = UDim2.new(0, 14, 0, 14)
+HitboxButton.Position = UDim2.new(0, -7, 0.5, -7)
+HitboxButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+HitboxButton.BorderSizePixel = 0
+HitboxButton.Parent = HitboxBackground
+
+local HButtonCorner = Instance.new("UICorner")
+HButtonCorner.CornerRadius = UDim.new(0.5, 0)
+HButtonCorner.Parent = HitboxButton
+
+-- Профиль
 local ProfileFrame = Instance.new("Frame")
 ProfileFrame.Size = UDim2.new(0, 150, 0, 60)
 ProfileFrame.Position = UDim2.new(0, 10, 1, -70)
@@ -164,7 +205,7 @@ UsernameLabel.Font = Enum.Font.SourceSansBold
 UsernameLabel.TextSize = 16
 UsernameLabel.Parent = ProfileFrame
 
--- Левые кнопки навигации
+-- Навигация
 local MiscButton = Instance.new("TextButton")
 MiscButton.Size = UDim2.new(0, 140, 0, 32)
 MiscButton.Position = UDim2.new(0, 10, 0, 50)
@@ -194,7 +235,9 @@ KeybindsCorner.CornerRadius = UDim.new(0, 6)
 KeybindsCorner.Parent = KeybindsButton
 -- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
--- Переключение вкладок меню
+local currentHitboxSize = 2
+
+-- Логика вкладок
 MiscButton.MouseButton1Click:Connect(function()
 	MiscTab.Visible = true
 	KeybindsTab.Visible = false
@@ -209,10 +252,8 @@ KeybindsButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Скрытие / Показ и смена клавиши бинда
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
-	
 	if isListeningForKey then
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			toggleKey = input.KeyCode
@@ -230,50 +271,86 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- ЛОГИКА ПОЛЗУНКА FOV (50 - 120)
-local minFov, maxFov = 50, 120
-local isSliding = false
+-- УПРАВЛЕНИЕ ПОЛЗУНКАМИ (Общая функция)
+local activeSlider = nil
 
-local function updateSlider(input)
+local function handleSliderUpdate(input)
+	if not activeSlider then return end
+	
 	local mousePos = input.Position.X
-	local barPos = SliderBackground.AbsolutePosition.X
-	local barSize = SliderBackground.AbsoluteSize.X
-	
+	local barPos = activeSlider.Bg.AbsolutePosition.X
+	local barSize = activeSlider.Bg.AbsoluteSize.X
 	local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
-	SliderFill.Size = UDim2.new(percentage, 0, 1, 0)
-	SliderButton.Position = UDim2.new(percentage, -7, 0.5, -7)
 	
-	local currentFov = minFov + (percentage * (maxFov - minFov))
-	Camera.FieldOfView = currentFov
-	SliderTitle.Text = "Field of View (FOV): " .. math.round(currentFov)
+	activeSlider.Fill.Size = UDim2.new(percentage, 0, 1, 0)
+	activeSlider.Btn.Position = UDim2.new(percentage, -7, 0.5, -7)
+	
+	local value = activeSlider.Min + (percentage * (activeSlider.Max - activeSlider.Min))
+	activeSlider.Callback(value)
 end
 
+-- Активация FOV Slider
 SliderButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isSliding = true
+		activeSlider = {
+			Bg = SliderBackground, Fill = SliderFill, Btn = SliderButton,
+			Min = 50, Max = 120, Callback = function(v)
+				Camera.FieldOfView = v
+				SliderTitle.Text = "Field of View (FOV): " .. math.round(v)
+			end
+		}
+	end
+end)
+
+-- Активация Hitbox Slider
+HitboxButton.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		activeSlider = {
+			Bg = HitboxBackground, Fill = HitboxFill, Btn = HitboxButton,
+			Min = 2, Max = 20, Callback = function(v)
+				currentHitboxSize = v
+				HitboxTitle.Text = "Hitbox Size (Silent Aim): " .. string.format("%.1f", v)
+			end
+		}
 	end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-		isSliding = false
+		activeSlider = nil
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-		updateSlider(input)
+	if activeSlider and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		handleSliderUpdate(input)
 	end
 end)
 
--- Инициализация начальной позиции ползунка под текущий FOV игрока
-local initialPercentage = math.clamp((Camera.FieldOfView - minFov) / (maxFov - minFov), 0, 1)
-SliderFill.Size = UDim2.new(initialPercentage, 0, 1, 0)
-SliderButton.Position = UDim2.new(initialPercentage, -7, 0.5, -7)
+-- Инициализация FOV
+local initPercentage = math.clamp((Camera.FieldOfView - 50) / 70, 0, 1)
+SliderFill.Size = UDim2.new(initPercentage, 0, 1, 0)
+SliderButton.Position = UDim2.new(initPercentage, -7, 0.5, -7)
 
--- СТАБИЛЬНАЯ СИСТЕМА ДЛЯ ПЕРЕТАСКИВАНИЯ МЕНЮ
+
+-- [РАБОТА ХИТБОКСОВ (SILENT AIM LOOP)]
+-- Постоянно увеличивает Head (голову) у всех противников до выбранного размера
+RunService.RenderStepped:Connect(function()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local head = player.Character:FindFirstChild("Head")
+			if head and head:IsA("BasePart") then
+				head.Size = Vector3.new(currentHitboxSize, currentHitboxSize, currentHitboxSize)
+				head.Transparency = 0.7 -- Делаем её слегка видимой (полупрозрачной) для удобства
+				head.CanCollide = false  -- Чтобы не ломать физику игры
+			end
+		end
+	end
+end)
+
+
+-- Перетаскивание меню
 local dragToggle, dragStart, startPos = nil, nil, nil
-
 DragPanel.InputBegan:Connect(function(input)
 	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
 		dragToggle = true
@@ -281,13 +358,11 @@ DragPanel.InputBegan:Connect(function(input)
 		startPos = MainFrame.Position
 	end
 end)
-
 DragPanel.InputEnded:Connect(function(input)
 	if (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
 		dragToggle = false
 	end
 end)
-
 RunService.RenderStepped:Connect(function()
 	if dragToggle then
 		local mousePos = UserInputService:GetMouseLocation()
