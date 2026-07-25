@@ -10,6 +10,11 @@ local isListeningForKey = false
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MainMenuGui"
 ScreenGui.ResetOnSpawn = false
+
+-- ПРИОРИТЕТ ОТОБРАЖЕНИЯ: ставим максимальный слой, чтобы быть выше всех
+ScreenGui.DisplayOrder = 999999999 
+ScreenGui.IgnoreGuiInset = true -- Игнорировать верхнюю черную полосу Roblox (топбар)
+
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
@@ -25,7 +30,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end -- Игнорируем, если игрок пишет в чат
 	
 	if isListeningForKey then
-		-- Если мы ждем нажатия для смены клавиши
 		if input.UserInputType == Enum.UserInputType.Keyboard then
 			toggleKey = input.KeyCode
 			isListeningForKey = false
@@ -35,7 +39,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			end
 		end
 	else
-		-- Обычное скрытие/показ меню
 		if input.KeyCode == toggleKey then
 			MainFrame.Visible = not MainFrame.Visible
 		end
@@ -84,7 +87,7 @@ UsernameLabel.Parent = ProfileFrame
 local KeybindsButton = Instance.new("TextButton")
 KeybindsButton.Name = "KeybindsButton"
 KeybindsButton.Size = UDim2.new(0.35, 0, 0.1, 0)
-KeybindsButton.Position = UDim2.new(0.02, 0, 0.65, 0) -- Встала на место прошлой кнопки
+KeybindsButton.Position = UDim2.new(0.02, 0, 0.65, 0)
 KeybindsButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 KeybindsButton.Text = "Bind: " .. toggleKey.Name
 KeybindsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -97,11 +100,11 @@ KeybindsButton.MouseButton1Click:Connect(function()
 	KeybindsButton.Text = "Press any key..."
 end)
 
--- КНОПКА MISC (сдвинулась еще выше)
+-- КНОПКА MISC (выше кейбиндов)
 local MiscButton = Instance.new("TextButton")
 MiscButton.Name = "MiscButton"
 MiscButton.Size = UDim2.new(0.35, 0, 0.1, 0)
-MiscButton.Position = UDim2.new(0.02, 0, 0.52, 0) -- Сдвинута наверх, чтобы не перекрывать
+MiscButton.Position = UDim2.new(0.02, 0, 0.52, 0)
 MiscButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 MiscButton.Text = "Misc"
 MiscButton.TextColor3 = Color3.fromRGB(255, 255, 255)
