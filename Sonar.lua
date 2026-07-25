@@ -142,7 +142,7 @@ AimContainer.Parent = MiscTab
 local AimTitle = Instance.new("TextLabel")
 AimTitle.Size = UDim2.new(1, 0, 0, 20)
 AimTitle.BackgroundTransparency = 1
-AimTitle.Text = "Silent Target Area: 80"
+AimTitle.Text = "Silent Aim Radius: 100"
 AimTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 AimTitle.Font = Enum.Font.SourceSansSemibold
 AimTitle.TextSize = 14
@@ -157,14 +157,14 @@ AimBackground.BorderSizePixel = 0
 AimBackground.Parent = AimContainer
 
 local AimFill = Instance.new("Frame")
-AimFill.Size = UDim2.new(0.25, 0, 1, 0)
+AimFill.Size = UDim2.new(0.3, 0, 1, 0)
 AimFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 AimFill.BorderSizePixel = 0
 AimFill.Parent = AimBackground
 
 local AimButton = Instance.new("ImageButton")
 AimButton.Size = UDim2.new(0, 14, 0, 14)
-AimButton.Position = UDim2.new(0.25, -7, 0.5, -7)
+AimButton.Position = UDim2.new(0.3, -7, 0.5, -7)
 AimButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 AimButton.BorderSizePixel = 0
 AimButton.Parent = AimBackground
@@ -235,7 +235,7 @@ KeybindsCorner.CornerRadius = UDim.new(0, 6)
 KeybindsCorner.Parent = KeybindsButton
 -- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
-local silentAimFOV = 80 -- Дистанция поиска вокруг курсора
+local silentAimFOV = 100 -- Скрытый радиус захвата вокруг курсора (в пикселях)
 
 -- Вкладки
 MiscButton.MouseButton1Click:Connect(function()
@@ -303,9 +303,9 @@ AimButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		activeSlider = {
 			Bg = AimBackground, Fill = AimFill, Btn = AimButton,
-			Min = 20, Max = 400, Callback = function(v)
+			Min = 20, Max = 300, Callback = function(v)
 				silentAimFOV = v
-				AimTitle.Text = "Silent Target Area: " .. math.round(v)
+				AimTitle.Text = "Silent Aim Radius: " .. math.round(v)
 			end
 		}
 	end
@@ -329,13 +329,15 @@ SliderFill.Size = UDim2.new(initPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(initPercentage, -7, 0.5, -7)
 
 
--- [МЕХАНИКА СКРЫТНОЙ ДОИЗМЕНЕНИЯ КАМЕРЫ (INVISIBLE SNAP)]
-local function getClosestPartToCursor()
+-- [АЛГОРИТМ ПОДМЕНЫ ДАННЫХ МЫШИ (LEGIT SILENT AIM)]
+-- Находит ближайшую к курсору кость противника в заданном радиусе пикселей
+local function getClosestBodyPartToCursor()
 	local mousePos = UserInputService:GetMouseLocation()
 	local closestPart = nil
 	local shortestDistance = silentAimFOV
 
 	for _, player in ipairs(Players:GetPlayers()) do
+		-- Проверяем, что это не локальный игрок, у него загружен персонаж и он жив
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
 			for _, part in ipairs(player.Character:GetChildren()) do
 				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
@@ -354,26 +356,22 @@ local function getClosestPartToCursor()
 	return closestPart
 end
 
--- Отслеживание нажатия левой кнопки мыши (клик броска)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		local targetPart = getClosestPartToCursor()
+-- Перехват свойств мыши через hookmetamethod
+-- Этот метод подменяет ответы на запросы игры о положении мыши на системном уровне
+local oldIndex
+oldIndex = hookmetamethod(game, "__index", function(self, key)
+	-- Если вызов идет из скрипта игры, объект является мышкой и игра проверяет куда направлен клик
+	if not checkcaller() and self:IsA("Mouse") and (key == "Hit" or key == "Target") then
+		local targetPart = getClosestBodyPartToCursor()
 		if targetPart then
-			-- 1. Запоминаем куда смотрела камера изначально
-			local originalCFrame = Camera.CFrame
-			
-			-- 2. Мгновенный разворот камеры на цель (кость врага)
-			Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
-			
-			-- 3. Ждем микропаузу (один физический шаг рендеринга кадра), чтобы игра отправила пакет броска
-			RunService.RenderStepped:Wait()
-			
-			-- 4. Мгновенно возвращаем камеру назад
-			Camera.CFrame = originalCFrame
+			if key == "Hit" then
+				return targetPart.CFrame -- Игра думает, что трехмерные координаты мыши находятся на игроке
+			elseif key == "Target" then
+				return targetPart -- Игра уверена, что курсор физически наведен на деталь противника
+			end
 		end
 	end
+	return oldIndex(self, key)
 end)
 
 
