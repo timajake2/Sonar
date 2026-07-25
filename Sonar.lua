@@ -1,14 +1,17 @@
--- Ссылки на сервисы
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 
--- Создание главного экрана UI
+-- Текущая клавиша скрытия меню (по умолчанию Right Shift)
+local toggleKey = Enum.KeyCode.RightShift
+local isListeningForKey = false
+
+-- Создание UI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "MainMenuGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Создание главного контейнера меню
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0.4, 0, 0.5, 0)
@@ -17,7 +20,29 @@ MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 MainFrame.BorderSizePixel = 0
 MainFrame.Parent = ScreenGui
 
--- Контейнер профиля (левый нижний угол меню)
+-- ФУНКЦИЯ СКРЫТИЯ/ПОКАЗА МЕНЮ
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end -- Игнорируем, если игрок пишет в чат
+	
+	if isListeningForKey then
+		-- Если мы ждем нажатия для смены клавиши
+		if input.UserInputType == Enum.UserInputType.Keyboard then
+			toggleKey = input.KeyCode
+			isListeningForKey = false
+			local keybindButton = MainFrame:FindFirstChild("KeybindsButton")
+			if keybindButton then
+				keybindButton.Text = "Bind: " .. toggleKey.Name
+			end
+		end
+	else
+		-- Обычное скрытие/показ меню
+		if input.KeyCode == toggleKey then
+			MainFrame.Visible = not MainFrame.Visible
+		end
+	end
+end)
+
+-- Профиль игрока (слева снизу)
 local ProfileFrame = Instance.new("Frame")
 ProfileFrame.Name = "ProfileFrame"
 ProfileFrame.Size = UDim2.new(0.4, 0, 0.2, 0)
@@ -25,7 +50,6 @@ ProfileFrame.Position = UDim2.new(0.02, 0, 0.78, 0)
 ProfileFrame.BackgroundTransparency = 1
 ProfileFrame.Parent = MainFrame
 
--- Аватар игрока (круглый или квадратный)
 local AvatarImage = Instance.new("ImageLabel")
 AvatarImage.Name = "AvatarImage"
 AvatarImage.Size = UDim2.new(0, 50, 0, 50)
@@ -33,7 +57,6 @@ AvatarImage.Position = UDim2.new(0, 0, 0.5, -25)
 AvatarImage.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 AvatarImage.BorderSizePixel = 0
 
--- Получение иконки профиля (Bust - голова и плечи)
 local userId = LocalPlayer.UserId
 local thumbType = Enum.ThumbnailType.AvatarBust
 local thumbSize = Enum.ThumbnailSize.Size100x100
@@ -41,12 +64,10 @@ local content, isReady = Players:GetUserThumbnailAsync(userId, thumbType, thumbS
 AvatarImage.Image = content
 AvatarImage.Parent = ProfileFrame
 
--- Скругление для аватара
 local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0.5, 0) -- Делает аватар круглым
+UICorner.CornerRadius = UDim.new(0.5, 0)
 UICorner.Parent = AvatarImage
 
--- Никнейм игрока
 local UsernameLabel = Instance.new("TextLabel")
 UsernameLabel.Name = "UsernameLabel"
 UsernameLabel.Size = UDim2.new(1, -60, 1, 0)
@@ -59,11 +80,28 @@ UsernameLabel.Font = Enum.Font.SourceSansBold
 UsernameLabel.TextSize = 18
 UsernameLabel.Parent = ProfileFrame
 
--- Кнопка "Misc" (слева, чуть выше профиля)
+-- КНОПКА КЕЙБИНДОВ (над профилем)
+local KeybindsButton = Instance.new("TextButton")
+KeybindsButton.Name = "KeybindsButton"
+KeybindsButton.Size = UDim2.new(0.35, 0, 0.1, 0)
+KeybindsButton.Position = UDim2.new(0.02, 0, 0.65, 0) -- Встала на место прошлой кнопки
+KeybindsButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+KeybindsButton.Text = "Bind: " .. toggleKey.Name
+KeybindsButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+KeybindsButton.Font = Enum.Font.SourceSans
+KeybindsButton.TextSize = 16
+KeybindsButton.Parent = MainFrame
+
+KeybindsButton.MouseButton1Click:Connect(function()
+	isListeningForKey = true
+	KeybindsButton.Text = "Press any key..."
+end)
+
+-- КНОПКА MISC (сдвинулась еще выше)
 local MiscButton = Instance.new("TextButton")
 MiscButton.Name = "MiscButton"
 MiscButton.Size = UDim2.new(0.35, 0, 0.1, 0)
-MiscButton.Position = UDim2.new(0.02, 0, 0.65, 0)
+MiscButton.Position = UDim2.new(0.02, 0, 0.52, 0) -- Сдвинута наверх, чтобы не перекрывать
 MiscButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 MiscButton.Text = "Misc"
 MiscButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -71,8 +109,6 @@ MiscButton.Font = Enum.Font.SourceSans
 MiscButton.TextSize = 16
 MiscButton.Parent = MainFrame
 
--- Логика нажатия на кнопку Misc
 MiscButton.MouseButton1Click:Connect(function()
-	print("Кнопка Misc была нажата игроком: " .. LocalPlayer.Name)
-	-- Сюда можно добавить открытие вкладки или выполнение функции
+	print("Кнопка Misc была нажата!")
 end)
