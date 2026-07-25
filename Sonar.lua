@@ -1,11 +1,14 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Debris = game:GetService("Debris")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local toggleKey = Enum.KeyCode.RightShift
 local isListeningForKey = false
+local strength = 10000
 
 -- Создание UI
 local ScreenGui = Instance.new("ScreenGui")
@@ -146,19 +149,16 @@ local SliderBtnCorner = Instance.new("UICorner")
 SliderBtnCorner.CornerRadius = UDim.new(1, 0)
 SliderBtnCorner.Parent = SliderButton
 
--- FOV Значения мин/макс
 local minFov = 30
 local maxFov = 120
 local defaultFov = Camera.FieldOfView
 local currentPercentage = (defaultFov - minFov) / (maxFov - minFov)
 
--- Установка начальной позиции слайдера
 SliderFill.Size = UDim2.new(currentPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(currentPercentage, -8, 0.5, -8)
 
--- ================= ВКЛАДКА TARGET (ВЫПАДАЮЩИЙ СПИСОК + FLING) =================
+-- ================= ВКЛАДКА TARGET (СПИСОК + АВТО FLING) =================
 
--- Выпадающий список игроков
 local PlayerDropdown = Instance.new("TextButton")
 PlayerDropdown.Size = UDim2.new(0, 280, 0, 32)
 PlayerDropdown.Position = UDim2.new(0, 20, 0, 20)
@@ -184,7 +184,6 @@ DropArrow.Font = Enum.Font.SourceSansBold
 DropArrow.TextSize = 12
 DropArrow.Parent = PlayerDropdown
 
--- Контейнер для элементов списка
 local DropList = Instance.new("ScrollingFrame")
 DropList.Size = UDim2.new(0, 280, 0, 160)
 DropList.Position = UDim2.new(0, 20, 0, 55)
@@ -205,17 +204,30 @@ local DropListLayout = Instance.new("UIListLayout")
 DropListLayout.Padding = UDim.new(0, 2)
 DropListLayout.Parent = DropList
 
--- Статус
+-- Кнопка Target (автоматический флинг)
+local TargetActionBtn = Instance.new("TextButton")
+TargetActionBtn.Size = UDim2.new(0, 280, 0, 40)
+TargetActionBtn.Position = UDim2.new(0, 20, 0, 225)
+TargetActionBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+TargetActionBtn.Text = "TARGET (FLING)"
+TargetActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+TargetActionBtn.Font = Enum.Font.SourceSansBold
+TargetActionBtn.TextSize = 16
+TargetActionBtn.Parent = TargetTab
+
+local TargetBtnCorner2 = Instance.new("UICorner")
+TargetBtnCorner2.CornerRadius = UDim.new(0, 8)
+TargetBtnCorner2.Parent = TargetActionBtn
+
 local TargetStatus = Instance.new("TextLabel")
-TargetStatus.Size = UDim2.new(0, 280, 0, 40)
-TargetStatus.Position = UDim2.new(0, 20, 0, 225)
+TargetStatus.Size = UDim2.new(0, 280, 0, 20)
+TargetStatus.Position = UDim2.new(0, 20, 0, 275)
 TargetStatus.BackgroundTransparency = 1
-TargetStatus.Text = "ЛКМ - захватить | ПКМ - выбросить (сила 10000)"
+TargetStatus.Text = "Выберите игрока и нажмите TARGET"
 TargetStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
 TargetStatus.Font = Enum.Font.SourceSansItalic
 TargetStatus.TextSize = 12
 TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
-TargetStatus.TextWrapped = true
 TargetStatus.Parent = TargetTab
 
 -- ================= ЛЕВЫЕ КНОПКИ НАВИГАЦИИ =================
@@ -295,9 +307,8 @@ UsernameLabel.Font = Enum.Font.SourceSansBold
 UsernameLabel.TextSize = 16
 UsernameLabel.Parent = ProfileFrame
 
--- ================= ЛОГИКА =================
+-- ================= ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК =================
 
--- Переключение вкладок
 MiscButton.MouseButton1Click:Connect(function()
 	MiscTab.Visible = true
 	KeybindsTab.Visible = false
@@ -379,7 +390,6 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Клик по полосе слайдера
 SliderBackground.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		isSliding = true
@@ -397,12 +407,9 @@ SliderBackground.InputBegan:Connect(function(input)
 	end
 end)
 
--- ================= TARGET: ВЫПАДАЮЩИЙ СПИСОК ЛОГИКА =================
+-- ================= TARGET: ВЫПАДАЮЩИЙ СПИСОК =================
 
 local selectedTarget = nil
-local grabbedPlayer = nil
-local originalCFrame = nil
-local noclipConnection = nil
 
 local function updatePlayerList()
 	for _, child in ipairs(DropList:GetChildren()) do
@@ -447,7 +454,6 @@ PlayerDropdown.MouseButton1Click:Connect(function()
 	DropList.Visible = not DropList.Visible
 end)
 
--- Закрытие списка при клике вне
 UserInputService.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		if DropList.Visible then
@@ -469,37 +475,116 @@ UserInputService.InputBegan:Connect(function(input)
 	end
 end)
 
--- ================= TARGET: FLING ЛОГИКА =================
+-- ================= TARGET: СИСТЕМА GRABPARTS + АВТО FLING =================
 
-local function enableNoclip()
-	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-		noclipConnection = RunService.Stepped:Connect(function()
-			if LocalPlayer.Character then
-				for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-					if part:IsA("BasePart") and part.CanCollide == true then
-						part.CanCollide = false
-					end
-				end
-			end
-		end)
-	end
-end
-
-local function disableNoclip()
-	if noclipConnection then
-		noclipConnection:Disconnect()
-		noclipConnection = nil
-	end
-	if LocalPlayer.Character then
-		for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = true
-			end
+local function createGrabParts(targetPlayer)
+	if not targetPlayer or not targetPlayer.Character then return end
+	
+	local localChar = LocalPlayer.Character
+	if not localChar then return end
+	
+	local localRoot = localChar:FindFirstChild("HumanoidRootPart")
+	local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+	
+	if not localRoot or not targetRoot then return end
+	
+	-- Сохраняем позицию для возврата
+	local originalCFrame = localRoot.CFrame
+	
+	-- Ноуклип
+	for _, part in ipairs(localChar:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
 		end
 	end
+	
+	-- Телепорт к цели
+	localRoot.CFrame = targetRoot.CFrame * CFrame.new(0, -3, 0)
+	
+	-- Создаём модель GrabParts
+	local grabModel = Instance.new("Model")
+	grabModel.Name = "GrabParts"
+	grabModel.Parent = Workspace
+	
+	local grabPart = Instance.new("Part")
+	grabPart.Name = "GrabPart"
+	grabPart.Size = Vector3.new(1, 1, 1)
+	grabPart.Transparency = 1
+	grabPart.CanCollide = false
+	grabPart.Anchored = false
+	grabPart.Parent = grabModel
+	
+	-- Weld для захвата
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = grabPart
+	weld.Part1 = targetRoot
+	weld.Parent = grabPart
+	
+	-- Слушатель на удаление модели (срабатывает при ПКМ)
+	grabModel:GetPropertyChangedSignal("Parent"):Connect(function()
+		if not grabModel.Parent then
+			local lastInput = UserInputService:GetLastInputType()
+			
+			if lastInput == Enum.UserInputType.MouseButton2 then
+				-- Запуск с силой 10000 по направлению камеры
+				local velocityObj = Instance.new("BodyVelocity", targetRoot)
+				velocityObj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+				velocityObj.Velocity = Camera.CFrame.LookVector * strength
+				Debris:AddItem(velocityObj, 1)
+				
+				TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " запущен с силой " .. strength .. "!"
+			elseif lastInput == Enum.UserInputType.MouseButton1 then
+				TargetStatus.Text = "Захват отменён."
+			else
+				TargetStatus.Text = "Захват прерван."
+			end
+			
+			-- Возврат на исходную позицию
+			task.wait(0.1)
+			if localRoot and originalCFrame then
+				localRoot.CFrame = originalCFrame
+			end
+			
+			-- Восстановление коллизий
+			for _, part in ipairs(localChar:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+		end
+	end)
+	
+	TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " захвачен! ПКМ - запустить, ЛКМ - отменить."
+	
+	-- Удаляем модель через 0.5 секунды, если игрок не нажал кнопки (авто-флинг)
+	task.delay(0.5, function()
+		if grabModel and grabModel.Parent then
+			-- Автоматический флинг, если не нажато ничего
+			local velocityObj = Instance.new("BodyVelocity", targetRoot)
+			velocityObj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+			velocityObj.Velocity = Camera.CFrame.LookVector * strength
+			Debris:AddItem(velocityObj, 1)
+			
+			grabModel:Destroy()
+			
+			TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " авто-запущен с силой " .. strength .. "!"
+			
+			task.wait(0.1)
+			if localRoot and originalCFrame then
+				localRoot.CFrame = originalCFrame
+			end
+			
+			for _, part in ipairs(localChar:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+		end
+	end)
 end
 
-local function grabTarget()
+-- Кнопка TARGET
+TargetActionBtn.MouseButton1Click:Connect(function()
 	if not selectedTarget then
 		TargetStatus.Text = "Сначала выберите игрока из списка!"
 		return
@@ -509,118 +594,11 @@ local function grabTarget()
 		return
 	end
 	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		TargetStatus.Text = "Ваш персонаж не загружен!"
 		return
 	end
 	
-	if grabbedPlayer == selectedTarget then
-		TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " уже захвачен! ПКМ - выбросить."
-		return
-	end
-	
-	local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	originalCFrame = localRoot.CFrame
-	
-	enableNoclip()
-	
-	local targetRoot = selectedTarget.Character:FindFirstChild("HumanoidRootPart")
-	localRoot.CFrame = targetRoot.CFrame * CFrame.new(0, -3, 0)
-	
-	-- Удаляем старый weld если есть
-	local oldWeld = localRoot:FindFirstChild("GrabWeld")
-	if oldWeld then
-		oldWeld:Destroy()
-	end
-	
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = localRoot
-	weld.Part1 = targetRoot
-	weld.Parent = localRoot
-	weld.Name = "GrabWeld"
-	
-	grabbedPlayer = selectedTarget
-	
-	TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " захвачен! ПКМ - выбросить вверх (сила 10000)."
-end
-
-local function flingTarget()
-	if not grabbedPlayer then
-		TargetStatus.Text = "Некого выбрасывать! Сначала захватите ЛКМ."
-		return
-	end
-	if not grabbedPlayer.Character or not grabbedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-		TargetStatus.Text = "Игрок уже не на карте."
-		grabbedPlayer = nil
-		return
-	end
-	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-		return
-	end
-	
-	local localRoot = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-	
-	local weld = localRoot:FindFirstChild("GrabWeld")
-	if weld then
-		weld:Destroy()
-	end
-	
-	local targetRoot = grabbedPlayer.Character:FindFirstChild("HumanoidRootPart")
-	
-	if targetRoot then
-		local bv = Instance.new("BodyVelocity")
-		bv.MaxForce = Vector3.new(1, 1, 1) * 10^6
-		bv.Velocity = Vector3.new(0, 10000, 0)
-		bv.P = 10^5
-		bv.Parent = targetRoot
-		
-		task.delay(0.1, function()
-			if bv then bv:Destroy() end
-		end)
-	end
-	
-	local targetName = grabbedPlayer.Name
-	grabbedPlayer = nil
-	
-	TargetStatus.Text = "Игрок " .. targetName .. " выброшен с силой 10000 вверх! Возвращаемся..."
-	
-	task.wait(0.05)
-	if originalCFrame and localRoot then
-		localRoot.CFrame = originalCFrame
-	end
-	disableNoclip()
-	originalCFrame = nil
-	TargetStatus.Text = "Готов. ЛКМ - захватить | ПКМ - выбросить (сила 10000)"
-end
-
--- Привязка захвата/выброса к кнопкам мыши (только когда открыта вкладка Target)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if not MainFrame.Visible then return end
-	if not TargetTab.Visible then return end
-	
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		-- Проверяем что клик не по GUI элементам
-		local mousePos = UserInputService:GetMouseLocation()
-		local guiObjects = LocalPlayer.PlayerGui:FindFirstChild("SolarMenuGui")
-		if guiObjects then
-			for _, obj in ipairs(guiObjects:GetDescendants()) do
-				if obj:IsA("GuiButton") and obj.AbsolutePosition.X <= mousePos.X and obj.AbsolutePosition.X + obj.AbsoluteSize.X >= mousePos.X and
-				   obj.AbsolutePosition.Y <= mousePos.Y and obj.AbsolutePosition.Y + obj.AbsoluteSize.Y >= mousePos.Y and obj.Visible then
-					return
-				end
-			end
-		end
-		grabTarget()
-		
-	elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-		flingTarget()
-	end
-end)
-
--- Очистка при смерти
-LocalPlayer.CharacterAdded:Connect(function()
-	grabbedPlayer = nil
-	originalCFrame = nil
-	disableNoclip()
+	createGrabParts(selectedTarget)
 end)
 
 -- ================= ПЕРЕТАСКИВАНИЕ ОКНА =================
@@ -646,4 +624,11 @@ UserInputService.InputChanged:Connect(function(input)
 		local delta = input.Position - dragStart
 		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
+end)
+
+-- Очистка при смерти
+LocalPlayer.CharacterAdded:Connect(function()
+	selectedTarget = nil
+	PlayerDropdown.Text = "Выберите игрока..."
+	TargetStatus.Text = "Выберите игрока и нажмите TARGET"
 end)
