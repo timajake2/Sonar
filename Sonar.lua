@@ -132,7 +132,7 @@ local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(0.5, 0)
 ButtonCorner.Parent = SliderButton
 
--- [ПОЛЗУНОК 2: SILENT AIM FOV (РАДИУС ЗАХВАТА)]
+-- [ПОЛЗУНОК 2: СКРЫТЫЙ SILENT AIM RAD]
 local AimContainer = Instance.new("Frame")
 AimContainer.Size = UDim2.new(0, 300, 0, 50)
 AimContainer.Position = UDim2.new(0.5, -150, 0, 85)
@@ -142,7 +142,7 @@ AimContainer.Parent = MiscTab
 local AimTitle = Instance.new("TextLabel")
 AimTitle.Size = UDim2.new(1, 0, 0, 20)
 AimTitle.BackgroundTransparency = 1
-AimTitle.Text = "Silent Aim FOV: 50"
+AimTitle.Text = "Silent Target Area: 80"
 AimTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 AimTitle.Font = Enum.Font.SourceSansSemibold
 AimTitle.TextSize = 14
@@ -157,14 +157,14 @@ AimBackground.BorderSizePixel = 0
 AimBackground.Parent = AimContainer
 
 local AimFill = Instance.new("Frame")
-AimFill.Size = UDim2.new(0.15, 0, 1, 0)
+AimFill.Size = UDim2.new(0.25, 0, 1, 0)
 AimFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 AimFill.BorderSizePixel = 0
 AimFill.Parent = AimBackground
 
 local AimButton = Instance.new("ImageButton")
 AimButton.Size = UDim2.new(0, 14, 0, 14)
-AimButton.Position = UDim2.new(0.15, -7, 0.5, -7)
+AimButton.Position = UDim2.new(0.25, -7, 0.5, -7)
 AimButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 AimButton.BorderSizePixel = 0
 AimButton.Parent = AimBackground
@@ -235,31 +235,9 @@ KeybindsCorner.CornerRadius = UDim.new(0, 6)
 KeybindsCorner.Parent = KeybindsButton
 -- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
-local silentAimFOV = 50 -- Исходный радиус захвата вокруг курсора
+local silentAimFOV = 80 -- Дистанция поиска вокруг курсора
 
--- Визуальный круг FOV для Silent Aim на экране
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Visible = true
-FOVCircle.Color = Color3.fromRGB(255, 60, 60)
-FOVCircle.Thickness = 1
-FOVCircle.NumSides = 60
-FOVCircle.Radius = silentAimFOV
-FOVCircle.Filled = false
-
--- Обновление позиции круга за мышкой
-RunService.RenderStepped:Connect(function()
-	local mousePos = UserInputService:GetMouseLocation()
-	FOVCircle.Position = mousePos
-	FOVCircle.Radius = silentAimFOV
-	-- Скрываем круг, если само меню открыто (чтобы не мешал настраивать)
-	if MainFrame.Visible == false then
-		FOVCircle.Visible = true
-	else
-		FOVCircle.Visible = false
-	end
-end)
-
--- Переключение вкладок
+-- Вкладки
 MiscButton.MouseButton1Click:Connect(function()
 	MiscTab.Visible = true
 	KeybindsTab.Visible = false
@@ -293,12 +271,11 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- УПРАВЛЕНИЕ ПОЛЗУНКАМИ
+-- Слайдеры
 local activeSlider = nil
 
 local function handleSliderUpdate(input)
 	if not activeSlider then return end
-	
 	local mousePos = input.Position.X
 	local barPos = activeSlider.Bg.AbsolutePosition.X
 	local barSize = activeSlider.Bg.AbsoluteSize.X
@@ -306,7 +283,6 @@ local function handleSliderUpdate(input)
 	
 	activeSlider.Fill.Size = UDim2.new(percentage, 0, 1, 0)
 	activeSlider.Btn.Position = UDim2.new(percentage, -7, 0.5, -7)
-	
 	local value = activeSlider.Min + (percentage * (activeSlider.Max - activeSlider.Min))
 	activeSlider.Callback(value)
 end
@@ -327,9 +303,9 @@ AimButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		activeSlider = {
 			Bg = AimBackground, Fill = AimFill, Btn = AimButton,
-			Min = 10, Max = 300, Callback = function(v)
+			Min = 20, Max = 400, Callback = function(v)
 				silentAimFOV = v
-				AimTitle.Text = "Silent Aim FOV: " .. math.round(v)
+				AimTitle.Text = "Silent Target Area: " .. math.round(v)
 			end
 		}
 	end
@@ -347,15 +323,14 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Инициализация FOV
+-- Инициализация слайдеров
 local initPercentage = math.clamp((Camera.FieldOfView - 50) / 70, 0, 1)
 SliderFill.Size = UDim2.new(initPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(initPercentage, -7, 0.5, -7)
 
 
--- [АЛГОРИТМ SILENT AIM]
--- Находит ближайшую к курсору мыши часть тела любого игрока в радиусе FOV
-local function getClosestBodyPartToCursor()
+-- [МЕХАНИКА СКРЫТНОЙ ДОИЗМЕНЕНИЯ КАМЕРЫ (INVISIBLE SNAP)]
+local function getClosestPartToCursor()
 	local mousePos = UserInputService:GetMouseLocation()
 	local closestPart = nil
 	local shortestDistance = silentAimFOV
@@ -379,37 +354,26 @@ local function getClosestBodyPartToCursor()
 	return closestPart
 end
 
--- Хук метатаблицы (Перехват направления клика/выстрела/броска)
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-	local method = getnamecallmethod()
-	local args = {...}
-
-	-- Если игра запрашивает позицию мышки (Raycast / Hit / Target) во время броска или клика
-	if not checkcaller() and (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" or method == "Raycast") then
-		local targetPart = getClosestBodyPartToCursor()
+-- Отслеживание нажатия левой кнопки мыши (клик броска)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local targetPart = getClosestPartToCursor()
 		if targetPart then
-			-- Направляем физический луч строго в выбранную часть тела игрока
-			return targetPart, targetPart.Position, targetPart.Position, targetPart.Material
+			-- 1. Запоминаем куда смотрела камера изначально
+			local originalCFrame = Camera.CFrame
+			
+			-- 2. Мгновенный разворот камеры на цель (кость врага)
+			Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+			
+			-- 3. Ждем микропаузу (один физический шаг рендеринга кадра), чтобы игра отправила пакет броска
+			RunService.RenderStepped:Wait()
+			
+			-- 4. Мгновенно возвращаем камеру назад
+			Camera.CFrame = originalCFrame
 		end
 	end
-	return oldNamecall(self, ...)
-end)
-
--- Хук свойства мыши (Для инструментов игры, считывающих Mouse.Hit)
-local oldIndex
-oldIndex = hookmetamethod(game, "__index", function(self, key)
-	if not checkcaller() and self:IsA("Mouse") and (key == "Hit" or key == "Target") then
-		local targetPart = getClosestBodyPartToCursor()
-		if targetPart then
-			if key == "Hit" then
-				return targetPart.CFrame
-			elseif key == "Target" then
-				return targetPart
-			end
-		end
-	end
-	return oldIndex(self, key)
 end)
 
 
