@@ -132,7 +132,7 @@ local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(0.5, 0)
 ButtonCorner.Parent = SliderButton
 
--- [ПОЛЗУНОК 2: HITBOX EXPANDER]
+-- [ПОЛЗУНОК 2: FULL BODY HITBOX]
 local HitboxContainer = Instance.new("Frame")
 HitboxContainer.Size = UDim2.new(0, 300, 0, 50)
 HitboxContainer.Position = UDim2.new(0.5, -150, 0, 85)
@@ -142,7 +142,7 @@ HitboxContainer.Parent = MiscTab
 local HitboxTitle = Instance.new("TextLabel")
 HitboxTitle.Size = UDim2.new(1, 0, 0, 20)
 HitboxTitle.BackgroundTransparency = 1
-HitboxTitle.Text = "Hitbox Size (Silent Aim): 2"
+HitboxTitle.Text = "Body Hitbox Size: 2"
 HitboxTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
 HitboxTitle.Font = Enum.Font.SourceSansSemibold
 HitboxTitle.TextSize = 14
@@ -158,7 +158,7 @@ HitboxBackground.Parent = HitboxContainer
 
 local HitboxFill = Instance.new("Frame")
 HitboxFill.Size = UDim2.new(0, 0, 1, 0)
-HitboxFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60) -- Красный цвет для хитбоксов
+HitboxFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
 HitboxFill.BorderSizePixel = 0
 HitboxFill.Parent = HitboxBackground
 
@@ -271,7 +271,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- УПРАВЛЕНИЕ ПОЛЗУНКАМИ (Общая функция)
+-- УПРАВЛЕНИЕ ПОЛЗУНКАМИ
 local activeSlider = nil
 
 local function handleSliderUpdate(input)
@@ -289,7 +289,6 @@ local function handleSliderUpdate(input)
 	activeSlider.Callback(value)
 end
 
--- Активация FOV Slider
 SliderButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		activeSlider = {
@@ -302,14 +301,13 @@ SliderButton.InputBegan:Connect(function(input)
 	end
 end)
 
--- Активация Hitbox Slider
 HitboxButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		activeSlider = {
 			Bg = HitboxBackground, Fill = HitboxFill, Btn = HitboxButton,
 			Min = 2, Max = 20, Callback = function(v)
 				currentHitboxSize = v
-				HitboxTitle.Text = "Hitbox Size (Silent Aim): " .. string.format("%.1f", v)
+				HitboxTitle.Text = "Body Hitbox Size: " .. string.format("%.1f", v)
 			end
 		}
 	end
@@ -333,16 +331,19 @@ SliderFill.Size = UDim2.new(initPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(initPercentage, -7, 0.5, -7)
 
 
--- [РАБОТА ХИТБОКСОВ (SILENT AIM LOOP)]
--- Постоянно увеличивает Head (голову) у всех противников до выбранного размера
+-- [РАБОТА ХИТБОКСОВ (FULL BODY LOOP)]
+-- Постоянно увеличивает все части тела у всех противников до выбранного размера
 RunService.RenderStepped:Connect(function()
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character then
-			local head = player.Character:FindFirstChild("Head")
-			if head and head:IsA("BasePart") then
-				head.Size = Vector3.new(currentHitboxSize, currentHitboxSize, currentHitboxSize)
-				head.Transparency = 0.7 -- Делаем её слегка видимой (полупрозрачной) для удобства
-				head.CanCollide = false  -- Чтобы не ломать физику игры
+			-- Цикл по всем объектам внутри персонажа игрока
+			for _, part in ipairs(player.Character:GetChildren()) do
+				-- Изменяем только физические части (BasePart), пропуская HumanoidRootPart во избежание багов перемещения
+				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+					part.Size = Vector3.new(currentHitboxSize, currentHitboxSize, currentHitboxSize)
+					part.Transparency = 0.7 -- Делаем полупрозрачным, чтобы видеть увеличенную зону
+					part.CanCollide = false  -- Отключаем коллизию, чтобы персонажи не застревали в текстурах
+				end
 			end
 		end
 	end
