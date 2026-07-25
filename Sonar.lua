@@ -1,14 +1,15 @@
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local Debris = game:GetService("Debris")
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local toggleKey = Enum.KeyCode.RightShift
 local isListeningForKey = false
-local strength = 10000
+
+-- Silent Aim настройки
+local silentAimEnabled = false
+local aimRadius = 50
 
 -- Создание UI
 local ScreenGui = Instance.new("ScreenGui")
@@ -84,12 +85,12 @@ MiscTab.BackgroundTransparency = 1
 MiscTab.Visible = false
 MiscTab.Parent = MainFrame
 
-local TargetTab = Instance.new("Frame")
-TargetTab.Size = UDim2.new(1, -161, 1, -35)
-TargetTab.Position = UDim2.new(0, 161, 0, 35)
-TargetTab.BackgroundTransparency = 1
-TargetTab.Visible = false
-TargetTab.Parent = MainFrame
+local AimbotTab = Instance.new("Frame")
+AimbotTab.Size = UDim2.new(1, -161, 1, -35)
+AimbotTab.Position = UDim2.new(0, 161, 0, 35)
+AimbotTab.BackgroundTransparency = 1
+AimbotTab.Visible = false
+AimbotTab.Parent = MainFrame
 
 local KeybindsInfo = Instance.new("TextLabel")
 KeybindsInfo.Size = UDim2.new(1, 0, 1, 0)
@@ -157,84 +158,113 @@ local currentPercentage = (defaultFov - minFov) / (maxFov - minFov)
 SliderFill.Size = UDim2.new(currentPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(currentPercentage, -8, 0.5, -8)
 
--- ================= ВКЛАДКА TARGET =================
+-- ================= ВКЛАДКА AIMBOT (SILENT AIM + РАДИУС) =================
 
-local PlayerDropdown = Instance.new("TextButton")
-PlayerDropdown.Size = UDim2.new(0, 280, 0, 32)
-PlayerDropdown.Position = UDim2.new(0, 20, 0, 20)
-PlayerDropdown.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-PlayerDropdown.Text = "Выберите игрока..."
-PlayerDropdown.TextColor3 = Color3.fromRGB(200, 200, 200)
-PlayerDropdown.Font = Enum.Font.SourceSans
-PlayerDropdown.TextSize = 14
-PlayerDropdown.TextXAlignment = Enum.TextXAlignment.Left
-PlayerDropdown.Parent = TargetTab
+-- Заголовок
+local AimbotTitle = Instance.new("TextLabel")
+AimbotTitle.Size = UDim2.new(0, 300, 0, 30)
+AimbotTitle.Position = UDim2.new(0.5, -150, 0, 10)
+AimbotTitle.BackgroundTransparency = 1
+AimbotTitle.Text = "SILENT AIM"
+AimbotTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+AimbotTitle.Font = Enum.Font.SourceSansBold
+AimbotTitle.TextSize = 18
+AimbotTitle.Parent = AimbotTab
 
-local DropdownCorner = Instance.new("UICorner")
-DropdownCorner.CornerRadius = UDim.new(0, 6)
-DropdownCorner.Parent = PlayerDropdown
+-- Переключатель ВКЛ/ВЫКЛ
+local ToggleAimbot = Instance.new("TextButton")
+ToggleAimbot.Size = UDim2.new(0, 300, 0, 40)
+ToggleAimbot.Position = UDim2.new(0.5, -150, 0, 50)
+ToggleAimbot.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+ToggleAimbot.Text = "SILENT AIM: OFF"
+ToggleAimbot.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleAimbot.Font = Enum.Font.SourceSansBold
+ToggleAimbot.TextSize = 16
+ToggleAimbot.Parent = AimbotTab
 
-local DropArrow = Instance.new("TextLabel")
-DropArrow.Size = UDim2.new(0, 20, 1, 0)
-DropArrow.Position = UDim2.new(1, -25, 0, 0)
-DropArrow.BackgroundTransparency = 1
-DropArrow.Text = "▼"
-DropArrow.TextColor3 = Color3.fromRGB(150, 150, 150)
-DropArrow.Font = Enum.Font.SourceSansBold
-DropArrow.TextSize = 12
-DropArrow.Parent = PlayerDropdown
+local ToggleCorner = Instance.new("UICorner")
+ToggleCorner.CornerRadius = UDim.new(0, 8)
+ToggleCorner.Parent = ToggleAimbot
 
-local DropList = Instance.new("ScrollingFrame")
-DropList.Size = UDim2.new(0, 280, 0, 160)
-DropList.Position = UDim2.new(0, 20, 0, 55)
-DropList.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-DropList.BorderSizePixel = 1
-DropList.BorderColor3 = Color3.fromRGB(60, 60, 60)
-DropList.Visible = false
-DropList.ScrollBarThickness = 4
-DropList.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-DropList.CanvasSize = UDim2.new(0, 0, 0, 0)
-DropList.Parent = TargetTab
+-- Радиус
+local RadiusContainer = Instance.new("Frame")
+RadiusContainer.Size = UDim2.new(0, 300, 0, 60)
+RadiusContainer.Position = UDim2.new(0.5, -150, 0, 110)
+RadiusContainer.BackgroundTransparency = 1
+RadiusContainer.Parent = AimbotTab
 
-local DropListCorner = Instance.new("UICorner")
-DropListCorner.CornerRadius = UDim.new(0, 6)
-DropListCorner.Parent = DropList
+local RadiusTitle = Instance.new("TextLabel")
+RadiusTitle.Size = UDim2.new(1, 0, 0, 20)
+RadiusTitle.BackgroundTransparency = 1
+RadiusTitle.Text = "Radius: " .. aimRadius
+RadiusTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+RadiusTitle.Font = Enum.Font.SourceSansSemibold
+RadiusTitle.TextSize = 14
+RadiusTitle.Parent = RadiusContainer
 
-local DropListLayout = Instance.new("UIListLayout")
-DropListLayout.Padding = UDim.new(0, 2)
-DropListLayout.Parent = DropList
+local RadiusSliderBg = Instance.new("Frame")
+RadiusSliderBg.Size = UDim2.new(1, 0, 0, 8)
+RadiusSliderBg.Position = UDim2.new(0, 0, 0, 30)
+RadiusSliderBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+RadiusSliderBg.BorderSizePixel = 0
+RadiusSliderBg.Parent = RadiusContainer
 
--- Кнопка TARGET
-local TargetActionBtn = Instance.new("TextButton")
-TargetActionBtn.Size = UDim2.new(0, 280, 0, 40)
-TargetActionBtn.Position = UDim2.new(0, 20, 0, 225)
-TargetActionBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-TargetActionBtn.Text = "TARGET (AIM + FLING UP)"
-TargetActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetActionBtn.Font = Enum.Font.SourceSansBold
-TargetActionBtn.TextSize = 14
-TargetActionBtn.Parent = TargetTab
+local RadiusBgCorner = Instance.new("UICorner")
+RadiusBgCorner.CornerRadius = UDim.new(0, 4)
+RadiusBgCorner.Parent = RadiusSliderBg
 
-local TargetBtnCorner2 = Instance.new("UICorner")
-TargetBtnCorner2.CornerRadius = UDim.new(0, 8)
-TargetBtnCorner2.Parent = TargetActionBtn
+local RadiusFill = Instance.new("Frame")
+RadiusFill.Size = UDim2.new(0.5, 0, 1, 0)
+RadiusFill.BackgroundColor3 = Color3.fromRGB(255, 100, 0)
+RadiusFill.BorderSizePixel = 0
+RadiusFill.Parent = RadiusSliderBg
 
-local TargetStatus = Instance.new("TextLabel")
-TargetStatus.Size = UDim2.new(0, 280, 0, 20)
-TargetStatus.Position = UDim2.new(0, 20, 0, 275)
-TargetStatus.BackgroundTransparency = 1
-TargetStatus.Text = "Выберите игрока и нажмите TARGET"
-TargetStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
-TargetStatus.Font = Enum.Font.SourceSansItalic
-TargetStatus.TextSize = 12
-TargetStatus.TextXAlignment = Enum.TextXAlignment.Left
-TargetStatus.Parent = TargetTab
+local RadiusFillCorner = Instance.new("UICorner")
+RadiusFillCorner.CornerRadius = UDim.new(0, 4)
+RadiusFillCorner.Parent = RadiusFill
+
+local RadiusSliderBtn = Instance.new("ImageButton")
+RadiusSliderBtn.Size = UDim2.new(0, 16, 0, 16)
+RadiusSliderBtn.Position = UDim2.new(0.5, -8, 0.5, -8)
+RadiusSliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+RadiusSliderBtn.Image = ""
+RadiusSliderBtn.Parent = RadiusSliderBg
+
+local RadiusBtnCorner = Instance.new("UICorner")
+RadiusBtnCorner.CornerRadius = UDim.new(1, 0)
+RadiusBtnCorner.Parent = RadiusSliderBtn
+
+-- Статус
+local AimbotStatus = Instance.new("TextLabel")
+AimbotStatus.Size = UDim2.new(0, 300, 0, 40)
+AimbotStatus.Position = UDim2.new(0.5, -150, 0, 190)
+AimbotStatus.BackgroundTransparency = 1
+AimbotStatus.Text = "Выберите радиус и включите Silent Aim"
+AimbotStatus.TextColor3 = Color3.fromRGB(180, 180, 180)
+AimbotStatus.Font = Enum.Font.SourceSansItalic
+AimbotStatus.TextSize = 13
+AimbotStatus.TextWrapped = true
+AimbotStatus.Parent = AimbotTab
 
 -- ================= ЛЕВЫЕ КНОПКИ НАВИГАЦИИ =================
 
+local AimbotButton = Instance.new("TextButton")
+AimbotButton.Size = UDim2.new(0, 140, 0, 32)
+AimbotButton.Position = UDim2.new(0, 10, 0, 50)
+AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+AimbotButton.Text = "Aimbot"
+AimbotButton.TextColor3 = Color3.fromRGB(240, 240, 240)
+AimbotButton.Font = Enum.Font.SourceSansSemibold
+AimbotButton.TextSize = 15
+AimbotButton.Parent = MainFrame
+
+local AimbotCorner = Instance.new("UICorner")
+AimbotCorner.CornerRadius = UDim.new(0, 6)
+AimbotCorner.Parent = AimbotButton
+
 local MiscButton = Instance.new("TextButton")
 MiscButton.Size = UDim2.new(0, 140, 0, 32)
-MiscButton.Position = UDim2.new(0, 10, 0, 50)
+MiscButton.Position = UDim2.new(0, 10, 0, 95)
 MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 MiscButton.Text = "Misc"
 MiscButton.TextColor3 = Color3.fromRGB(240, 240, 240)
@@ -245,20 +275,6 @@ MiscButton.Parent = MainFrame
 local MiscCorner = Instance.new("UICorner")
 MiscCorner.CornerRadius = UDim.new(0, 6)
 MiscCorner.Parent = MiscButton
-
-local TargetButton = Instance.new("TextButton")
-TargetButton.Size = UDim2.new(0, 140, 0, 32)
-TargetButton.Position = UDim2.new(0, 10, 0, 95)
-TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-TargetButton.Text = "Target"
-TargetButton.TextColor3 = Color3.fromRGB(240, 240, 240)
-TargetButton.Font = Enum.Font.SourceSansSemibold
-TargetButton.TextSize = 15
-TargetButton.Parent = MainFrame
-
-local TargetBtnCorner = Instance.new("UICorner")
-TargetBtnCorner.CornerRadius = UDim.new(0, 6)
-TargetBtnCorner.Parent = TargetButton
 
 local KeybindsButton = Instance.new("TextButton")
 KeybindsButton.Size = UDim2.new(0, 140, 0, 32)
@@ -309,31 +325,31 @@ UsernameLabel.Parent = ProfileFrame
 
 -- ================= ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК =================
 
-MiscButton.MouseButton1Click:Connect(function()
-	MiscTab.Visible = true
+AimbotButton.MouseButton1Click:Connect(function()
+	AimbotTab.Visible = true
+	MiscTab.Visible = false
 	KeybindsTab.Visible = false
-	TargetTab.Visible = false
-	MiscButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-	TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	AimbotButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	KeybindsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
-TargetButton.MouseButton1Click:Connect(function()
-	MiscTab.Visible = false
+MiscButton.MouseButton1Click:Connect(function()
+	AimbotTab.Visible = false
+	MiscTab.Visible = true
 	KeybindsTab.Visible = false
-	TargetTab.Visible = true
-	TargetButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-	MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	MiscButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	KeybindsButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 end)
 
 KeybindsButton.MouseButton1Click:Connect(function()
+	AimbotTab.Visible = false
 	MiscTab.Visible = false
 	KeybindsTab.Visible = true
-	TargetTab.Visible = false
-	KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	AimbotButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	MiscButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-	TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+	KeybindsButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	
 	if not isListeningForKey then
 		isListeningForKey = true
@@ -407,127 +423,126 @@ SliderBackground.InputBegan:Connect(function(input)
 	end
 end)
 
--- ================= TARGET: ВЫПАДАЮЩИЙ СПИСОК =================
+-- ================= RADIUS СЛАЙДЕР ЛОГИКА =================
 
-local selectedTarget = nil
+local isRadiusSliding = false
 
-local function updatePlayerList()
-	for _, child in ipairs(DropList:GetChildren()) do
-		if child:IsA("TextButton") then
-			child:Destroy()
-		end
-	end
-	
-	local totalHeight = 0
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer then
-			local btn = Instance.new("TextButton")
-			btn.Size = UDim2.new(1, -4, 0, 28)
-			btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-			btn.Text = player.Name
-			btn.TextColor3 = Color3.fromRGB(230, 230, 230)
-			btn.Font = Enum.Font.SourceSans
-			btn.TextSize = 13
-			btn.TextXAlignment = Enum.TextXAlignment.Left
-			btn.Parent = DropList
-			
-			local btnCorner = Instance.new("UICorner")
-			btnCorner.CornerRadius = UDim.new(0, 4)
-			btnCorner.Parent = btn
-			
-			btn.MouseButton1Click:Connect(function()
-				selectedTarget = player
-				PlayerDropdown.Text = "Цель: " .. player.Name
-				DropList.Visible = false
-			end)
-			
-			totalHeight = totalHeight + 30
-		end
-	end
-	DropList.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-end
-
-updatePlayerList()
-
-PlayerDropdown.MouseButton1Click:Connect(function()
-	updatePlayerList()
-	DropList.Visible = not DropList.Visible
-end)
-
-UserInputService.InputBegan:Connect(function(input)
+RadiusSliderBtn.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		if DropList.Visible then
-			local mousePos = UserInputService:GetMouseLocation()
-			local listPos = DropList.AbsolutePosition
-			local listSize = DropList.AbsoluteSize
-			local dropPos = PlayerDropdown.AbsolutePosition
-			local dropSize = PlayerDropdown.AbsoluteSize
-			
-			if not (
-				(mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X and
-				 mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y) or
-				(mousePos.X >= dropPos.X and mousePos.X <= dropPos.X + dropSize.X and
-				 mousePos.Y >= dropPos.Y and mousePos.Y <= dropPos.Y + dropSize.Y)
-			) then
-				DropList.Visible = false
-			end
-		end
+		isRadiusSliding = true
 	end
 end)
 
--- ================= TARGET: AIM + AUTO FLING UP (БЕЗ НОУКЛИПА) =================
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isRadiusSliding = false
+	end
+end)
 
-local function aimAndFling(targetPlayer)
-	if not targetPlayer or not targetPlayer.Character then return end
+UserInputService.InputChanged:Connect(function(input)
+	if isRadiusSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local mousePos = input.Position.X
+		local barPos = RadiusSliderBg.AbsolutePosition.X
+		local barSize = RadiusSliderBg.AbsoluteSize.X
+		local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
+		
+		RadiusFill.Size = UDim2.new(percentage, 0, 1, 0)
+		RadiusSliderBtn.Position = UDim2.new(percentage, -8, 0.5, -8)
+		
+		aimRadius = math.floor(10 + (percentage * 190)) -- Радиус от 10 до 200
+		RadiusTitle.Text = "Radius: " .. aimRadius
+	end
+end)
+
+RadiusSliderBg.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isRadiusSliding = true
+		local mousePos = UserInputService:GetMouseLocation().X
+		local barPos = RadiusSliderBg.AbsolutePosition.X
+		local barSize = RadiusSliderBg.AbsoluteSize.X
+		local percentage = math.clamp((mousePos - barPos) / barSize, 0, 1)
+		
+		RadiusFill.Size = UDim2.new(percentage, 0, 1, 0)
+		RadiusSliderBtn.Position = UDim2.new(percentage, -8, 0.5, -8)
+		
+		aimRadius = math.floor(10 + (percentage * 190))
+		RadiusTitle.Text = "Radius: " .. aimRadius
+	end
+end)
+
+-- ================= SILENT AIM ЛОГИКА =================
+
+-- Функция поиска ближайшего игрока в радиусе
+local function getClosestPlayer()
+	local closestPlayer = nil
+	local closestDistance = aimRadius
 	
-	local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
-	local targetHumanoid = targetPlayer.Character:FindFirstChild("Humanoid")
-	
-	if not targetRoot then return end
-	
-	-- Наводим камеру на цель (AIM)
-	local targetPos = targetRoot.Position
-	local camCFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-	Camera.CFrame = camCFrame
-	
-	TaskStatus.Text = "Камера наведена на " .. targetPlayer.Name .. "..."
-	task.wait(0.1)
-	
-	-- Применяем силу ВВЕРХ через BodyVelocity
-	local bv = Instance.new("BodyVelocity")
-	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-	bv.Velocity = Vector3.new(0, strength, 0) -- СТРОГО ВВЕРХ
-	bv.P = math.huge
-	bv.Parent = targetRoot
-	
-	-- Удаляем BodyVelocity через 0.5 секунды
-	Debris:AddItem(bv, 0.5)
-	
-	-- Отключаем Humanoid чтобы ragdoll сработал
-	if targetHumanoid then
-		targetHumanoid.PlatformStand = true
-		task.delay(0.3, function()
-			if targetHumanoid and targetHumanoid.Parent then
-				targetHumanoid.PlatformStand = false
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local head = player.Character:FindFirstChild("Head")
+			local humanoid = player.Character:FindFirstChild("Humanoid")
+			
+			if head and humanoid and humanoid.Health > 0 then
+				local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position)
+				
+				if onScreen then
+					local mousePos = UserInputService:GetMouseLocation()
+					local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+					
+					if distance < closestDistance then
+						closestDistance = distance
+						closestPlayer = player
+					end
+				end
 			end
-		end)
+		end
 	end
 	
-	TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " запущен ВВЕРХ с силой " .. strength .. "!"
+	return closestPlayer
 end
 
--- Кнопка TARGET
-TargetActionBtn.MouseButton1Click:Connect(function()
-	if not selectedTarget then
-		TargetStatus.Text = "Сначала выберите игрока из списка!"
-		return
-	end
-	if not selectedTarget.Character or not selectedTarget.Character:FindFirstChild("HumanoidRootPart") then
-		TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " не на карте!"
-		return
+-- Перехват выстрела через удалённое событие (Silent Aim)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+	local args = {...}
+	local method = getnamecallmethod()
+	
+	if method == "FireServer" and silentAimEnabled then
+		if self.Name == "RemoteEvent" or self.Name == "GunEvent" or self.Name == "Shoot" or self.Name == "Fire" then
+			local target = getClosestPlayer()
+			if target and target.Character and target.Character:FindFirstChild("Head") then
+				-- Меняем направление на голову цели
+				local head = target.Character.Head
+				local direction = (head.Position - Camera.CFrame.Position).Unit
+				
+				-- Пытаемся найти аргументы с направлением и заменить их
+				for i, arg in ipairs(args) do
+					if typeof(arg) == "Vector3" and arg.Magnitude <= 1.1 then
+						args[i] = direction
+					elseif typeof(arg) == "CFrame" then
+						args[i] = CFrame.new(arg.Position, arg.Position + direction)
+					end
+				end
+			end
+		end
 	end
 	
-	aimAndFling(selectedTarget)
+	return oldNamecall(self, unpack(args))
+end)
+
+-- Переключатель Silent Aim
+ToggleAimbot.MouseButton1Click:Connect(function()
+	silentAimEnabled = not silentAimEnabled
+	
+	if silentAimEnabled then
+		ToggleAimbot.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
+		ToggleAimbot.Text = "SILENT AIM: ON"
+		AimbotStatus.Text = "Silent Aim активен! Радиус: " .. aimRadius .. ". Просто стреляйте."
+	else
+		ToggleAimbot.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+		ToggleAimbot.Text = "SILENT AIM: OFF"
+		AimbotStatus.Text = "Выберите радиус и включите Silent Aim"
+	end
 end)
 
 -- ================= ПЕРЕТАСКИВАНИЕ ОКНА =================
@@ -553,11 +568,4 @@ UserInputService.InputChanged:Connect(function(input)
 		local delta = input.Position - dragStart
 		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
-end)
-
--- Очистка при смерти
-LocalPlayer.CharacterAdded:Connect(function()
-	selectedTarget = nil
-	PlayerDropdown.Text = "Выберите игрока..."
-	TargetStatus.Text = "Выберите игрока и нажмите TARGET"
 end)
