@@ -157,7 +157,7 @@ local currentPercentage = (defaultFov - minFov) / (maxFov - minFov)
 SliderFill.Size = UDim2.new(currentPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(currentPercentage, -8, 0.5, -8)
 
--- ================= ВКЛАДКА TARGET (СПИСОК + АВТО FLING) =================
+-- ================= ВКЛАДКА TARGET =================
 
 local PlayerDropdown = Instance.new("TextButton")
 PlayerDropdown.Size = UDim2.new(0, 280, 0, 32)
@@ -204,15 +204,15 @@ local DropListLayout = Instance.new("UIListLayout")
 DropListLayout.Padding = UDim.new(0, 2)
 DropListLayout.Parent = DropList
 
--- Кнопка Target (автоматический флинг)
+-- Кнопка TARGET
 local TargetActionBtn = Instance.new("TextButton")
 TargetActionBtn.Size = UDim2.new(0, 280, 0, 40)
 TargetActionBtn.Position = UDim2.new(0, 20, 0, 225)
 TargetActionBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-TargetActionBtn.Text = "TARGET (FLING)"
+TargetActionBtn.Text = "TARGET (AIM + FLING UP)"
 TargetActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 TargetActionBtn.Font = Enum.Font.SourceSansBold
-TargetActionBtn.TextSize = 16
+TargetActionBtn.TextSize = 14
 TargetActionBtn.Parent = TargetTab
 
 local TargetBtnCorner2 = Instance.new("UICorner")
@@ -475,112 +475,45 @@ UserInputService.InputBegan:Connect(function(input)
 	end
 end)
 
--- ================= TARGET: СИСТЕМА GRABPARTS + АВТО FLING =================
+-- ================= TARGET: AIM + AUTO FLING UP (БЕЗ НОУКЛИПА) =================
 
-local function createGrabParts(targetPlayer)
+local function aimAndFling(targetPlayer)
 	if not targetPlayer or not targetPlayer.Character then return end
 	
-	local localChar = LocalPlayer.Character
-	if not localChar then return end
-	
-	local localRoot = localChar:FindFirstChild("HumanoidRootPart")
 	local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+	local targetHumanoid = targetPlayer.Character:FindFirstChild("Humanoid")
 	
-	if not localRoot or not targetRoot then return end
+	if not targetRoot then return end
 	
-	-- Сохраняем позицию для возврата
-	local originalCFrame = localRoot.CFrame
+	-- Наводим камеру на цель (AIM)
+	local targetPos = targetRoot.Position
+	local camCFrame = CFrame.new(Camera.CFrame.Position, targetPos)
+	Camera.CFrame = camCFrame
 	
-	-- Ноуклип
-	for _, part in ipairs(localChar:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.CanCollide = false
-		end
+	TaskStatus.Text = "Камера наведена на " .. targetPlayer.Name .. "..."
+	task.wait(0.1)
+	
+	-- Применяем силу ВВЕРХ через BodyVelocity
+	local bv = Instance.new("BodyVelocity")
+	bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+	bv.Velocity = Vector3.new(0, strength, 0) -- СТРОГО ВВЕРХ
+	bv.P = math.huge
+	bv.Parent = targetRoot
+	
+	-- Удаляем BodyVelocity через 0.5 секунды
+	Debris:AddItem(bv, 0.5)
+	
+	-- Отключаем Humanoid чтобы ragdoll сработал
+	if targetHumanoid then
+		targetHumanoid.PlatformStand = true
+		task.delay(0.3, function()
+			if targetHumanoid and targetHumanoid.Parent then
+				targetHumanoid.PlatformStand = false
+			end
+		end)
 	end
 	
-	-- Телепорт к цели
-	localRoot.CFrame = targetRoot.CFrame * CFrame.new(0, -3, 0)
-	
-	-- Создаём модель GrabParts
-	local grabModel = Instance.new("Model")
-	grabModel.Name = "GrabParts"
-	grabModel.Parent = Workspace
-	
-	local grabPart = Instance.new("Part")
-	grabPart.Name = "GrabPart"
-	grabPart.Size = Vector3.new(1, 1, 1)
-	grabPart.Transparency = 1
-	grabPart.CanCollide = false
-	grabPart.Anchored = false
-	grabPart.Parent = grabModel
-	
-	-- Weld для захвата
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0 = grabPart
-	weld.Part1 = targetRoot
-	weld.Parent = grabPart
-	
-	-- Слушатель на удаление модели (срабатывает при ПКМ)
-	grabModel:GetPropertyChangedSignal("Parent"):Connect(function()
-		if not grabModel.Parent then
-			local lastInput = UserInputService:GetLastInputType()
-			
-			if lastInput == Enum.UserInputType.MouseButton2 then
-				-- Запуск с силой 10000 по направлению камеры
-				local velocityObj = Instance.new("BodyVelocity", targetRoot)
-				velocityObj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-				velocityObj.Velocity = Camera.CFrame.LookVector * strength
-				Debris:AddItem(velocityObj, 1)
-				
-				TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " запущен с силой " .. strength .. "!"
-			elseif lastInput == Enum.UserInputType.MouseButton1 then
-				TargetStatus.Text = "Захват отменён."
-			else
-				TargetStatus.Text = "Захват прерван."
-			end
-			
-			-- Возврат на исходную позицию
-			task.wait(0.1)
-			if localRoot and originalCFrame then
-				localRoot.CFrame = originalCFrame
-			end
-			
-			-- Восстановление коллизий
-			for _, part in ipairs(localChar:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.CanCollide = true
-				end
-			end
-		end
-	end)
-	
-	TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " захвачен! ПКМ - запустить, ЛКМ - отменить."
-	
-	-- Удаляем модель через 0.5 секунды, если игрок не нажал кнопки (авто-флинг)
-	task.delay(0.5, function()
-		if grabModel and grabModel.Parent then
-			-- Автоматический флинг, если не нажато ничего
-			local velocityObj = Instance.new("BodyVelocity", targetRoot)
-			velocityObj.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-			velocityObj.Velocity = Camera.CFrame.LookVector * strength
-			Debris:AddItem(velocityObj, 1)
-			
-			grabModel:Destroy()
-			
-			TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " авто-запущен с силой " .. strength .. "!"
-			
-			task.wait(0.1)
-			if localRoot and originalCFrame then
-				localRoot.CFrame = originalCFrame
-			end
-			
-			for _, part in ipairs(localChar:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.CanCollide = true
-				end
-			end
-		end
-	end)
+	TargetStatus.Text = "Игрок " .. targetPlayer.Name .. " запущен ВВЕРХ с силой " .. strength .. "!"
 end
 
 -- Кнопка TARGET
@@ -593,12 +526,8 @@ TargetActionBtn.MouseButton1Click:Connect(function()
 		TargetStatus.Text = "Игрок " .. selectedTarget.Name .. " не на карте!"
 		return
 	end
-	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-		TargetStatus.Text = "Ваш персонаж не загружен!"
-		return
-	end
 	
-	createGrabParts(selectedTarget)
+	aimAndFling(selectedTarget)
 end)
 
 -- ================= ПЕРЕТАСКИВАНИЕ ОКНА =================
