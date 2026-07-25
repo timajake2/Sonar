@@ -9,7 +9,7 @@ local isListeningForKey = false
 
 -- Создание UI
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PremiumMenuGui"
+ScreenGui.Name = "SolarMenuGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 999999999 
 ScreenGui.IgnoreGuiInset = true 
@@ -91,7 +91,7 @@ KeybindsInfo.Font = Enum.Font.SourceSans
 KeybindsInfo.TextSize = 15
 KeybindsInfo.Parent = KeybindsTab
 
--- [ПОЛЗУНОК 1: FOV]
+-- [ПОЛЗУНОК 1: FOV КАМЕРЫ]
 local SliderContainer = Instance.new("Frame")
 SliderContainer.Size = UDim2.new(0, 300, 0, 50)
 SliderContainer.Position = UDim2.new(0.5, -150, 0, 20)
@@ -132,46 +132,46 @@ local ButtonCorner = Instance.new("UICorner")
 ButtonCorner.CornerRadius = UDim.new(0.5, 0)
 ButtonCorner.Parent = SliderButton
 
--- [ПОЛЗУНОК 2: FULL BODY HITBOX]
-local HitboxContainer = Instance.new("Frame")
-HitboxContainer.Size = UDim2.new(0, 300, 0, 50)
-HitboxContainer.Position = UDim2.new(0.5, -150, 0, 85)
-HitboxContainer.BackgroundTransparency = 1
-HitboxContainer.Parent = MiscTab
+-- [ПОЛЗУНОК 2: SILENT AIM FOV (РАДИУС ЗАХВАТА)]
+local AimContainer = Instance.new("Frame")
+AimContainer.Size = UDim2.new(0, 300, 0, 50)
+AimContainer.Position = UDim2.new(0.5, -150, 0, 85)
+AimContainer.BackgroundTransparency = 1
+AimContainer.Parent = MiscTab
 
-local HitboxTitle = Instance.new("TextLabel")
-HitboxTitle.Size = UDim2.new(1, 0, 0, 20)
-HitboxTitle.BackgroundTransparency = 1
-HitboxTitle.Text = "Body Hitbox Size: 2"
-HitboxTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
-HitboxTitle.Font = Enum.Font.SourceSansSemibold
-HitboxTitle.TextSize = 14
-HitboxTitle.TextXAlignment = Enum.TextXAlignment.Left
-HitboxTitle.Parent = HitboxContainer
+local AimTitle = Instance.new("TextLabel")
+AimTitle.Size = UDim2.new(1, 0, 0, 20)
+AimTitle.BackgroundTransparency = 1
+AimTitle.Text = "Silent Aim FOV: 50"
+AimTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
+AimTitle.Font = Enum.Font.SourceSansSemibold
+AimTitle.TextSize = 14
+AimTitle.TextXAlignment = Enum.TextXAlignment.Left
+AimTitle.Parent = AimContainer
 
-local HitboxBackground = Instance.new("Frame")
-HitboxBackground.Size = UDim2.new(1, 0, 0, 6)
-HitboxBackground.Position = UDim2.new(0, 0, 0, 25)
-HitboxBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-HitboxBackground.BorderSizePixel = 0
-HitboxBackground.Parent = HitboxContainer
+local AimBackground = Instance.new("Frame")
+AimBackground.Size = UDim2.new(1, 0, 0, 6)
+AimBackground.Position = UDim2.new(0, 0, 0, 25)
+AimBackground.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+AimBackground.BorderSizePixel = 0
+AimBackground.Parent = AimContainer
 
-local HitboxFill = Instance.new("Frame")
-HitboxFill.Size = UDim2.new(0, 0, 1, 0)
-HitboxFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-HitboxFill.BorderSizePixel = 0
-HitboxFill.Parent = HitboxBackground
+local AimFill = Instance.new("Frame")
+AimFill.Size = UDim2.new(0.15, 0, 1, 0)
+AimFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+AimFill.BorderSizePixel = 0
+AimFill.Parent = AimBackground
 
-local HitboxButton = Instance.new("ImageButton")
-HitboxButton.Size = UDim2.new(0, 14, 0, 14)
-HitboxButton.Position = UDim2.new(0, -7, 0.5, -7)
-HitboxButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-HitboxButton.BorderSizePixel = 0
-HitboxButton.Parent = HitboxBackground
+local AimButton = Instance.new("ImageButton")
+AimButton.Size = UDim2.new(0, 14, 0, 14)
+AimButton.Position = UDim2.new(0.15, -7, 0.5, -7)
+AimButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+AimButton.BorderSizePixel = 0
+AimButton.Parent = AimBackground
 
-local HButtonCorner = Instance.new("UICorner")
-HButtonCorner.CornerRadius = UDim.new(0.5, 0)
-HButtonCorner.Parent = HitboxButton
+local AButtonCorner = Instance.new("UICorner")
+AButtonCorner.CornerRadius = UDim.new(0.5, 0)
+AButtonCorner.Parent = AimButton
 
 -- Профиль
 local ProfileFrame = Instance.new("Frame")
@@ -235,9 +235,31 @@ KeybindsCorner.CornerRadius = UDim.new(0, 6)
 KeybindsCorner.Parent = KeybindsButton
 -- ================= ЛОГИКА И ИНТЕРАКТИВНОСТЬ =================
 
-local currentHitboxSize = 2
+local silentAimFOV = 50 -- Исходный радиус захвата вокруг курсора
 
--- Логика вкладок
+-- Визуальный круг FOV для Silent Aim на экране
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = true
+FOVCircle.Color = Color3.fromRGB(255, 60, 60)
+FOVCircle.Thickness = 1
+FOVCircle.NumSides = 60
+FOVCircle.Radius = silentAimFOV
+FOVCircle.Filled = false
+
+-- Обновление позиции круга за мышкой
+RunService.RenderStepped:Connect(function()
+	local mousePos = UserInputService:GetMouseLocation()
+	FOVCircle.Position = mousePos
+	FOVCircle.Radius = silentAimFOV
+	-- Скрываем круг, если само меню открыто (чтобы не мешал настраивать)
+	if MainFrame.Visible == false then
+		FOVCircle.Visible = true
+	else
+		FOVCircle.Visible = false
+	end
+end)
+
+-- Переключение вкладок
 MiscButton.MouseButton1Click:Connect(function()
 	MiscTab.Visible = true
 	KeybindsTab.Visible = false
@@ -301,13 +323,13 @@ SliderButton.InputBegan:Connect(function(input)
 	end
 end)
 
-HitboxButton.InputBegan:Connect(function(input)
+AimButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		activeSlider = {
-			Bg = HitboxBackground, Fill = HitboxFill, Btn = HitboxButton,
-			Min = 2, Max = 20, Callback = function(v)
-				currentHitboxSize = v
-				HitboxTitle.Text = "Body Hitbox Size: " .. string.format("%.1f", v)
+			Bg = AimBackground, Fill = AimFill, Btn = AimButton,
+			Min = 10, Max = 300, Callback = function(v)
+				silentAimFOV = v
+				AimTitle.Text = "Silent Aim FOV: " .. math.round(v)
 			end
 		}
 	end
@@ -331,22 +353,63 @@ SliderFill.Size = UDim2.new(initPercentage, 0, 1, 0)
 SliderButton.Position = UDim2.new(initPercentage, -7, 0.5, -7)
 
 
--- [РАБОТА ХИТБОКСОВ (FULL BODY LOOP)]
--- Постоянно увеличивает все части тела у всех противников до выбранного размера
-RunService.RenderStepped:Connect(function()
+-- [АЛГОРИТМ SILENT AIM]
+-- Находит ближайшую к курсору мыши часть тела любого игрока в радиусе FOV
+local function getClosestBodyPartToCursor()
+	local mousePos = UserInputService:GetMouseLocation()
+	local closestPart = nil
+	local shortestDistance = silentAimFOV
+
 	for _, player in ipairs(Players:GetPlayers()) do
-		if player ~= LocalPlayer and player.Character then
-			-- Цикл по всем объектам внутри персонажа игрока
+		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
 			for _, part in ipairs(player.Character:GetChildren()) do
-				-- Изменяем только физические части (BasePart), пропуская HumanoidRootPart во избежание багов перемещения
 				if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-					part.Size = Vector3.new(currentHitboxSize, currentHitboxSize, currentHitboxSize)
-					part.Transparency = 0.7 -- Делаем полупрозрачным, чтобы видеть увеличенную зону
-					part.CanCollide = false  -- Отключаем коллизию, чтобы персонажи не застревали в текстурах
+					local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+					if onScreen then
+						local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+						if distance < shortestDistance then
+							shortestDistance = distance
+							closestPart = part
+						end
+					end
 				end
 			end
 		end
 	end
+	return closestPart
+end
+
+-- Хук метатаблицы (Перехват направления клика/выстрела/броска)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+	local method = getnamecallmethod()
+	local args = {...}
+
+	-- Если игра запрашивает позицию мышки (Raycast / Hit / Target) во время броска или клика
+	if not checkcaller() and (method == "FindPartOnRay" or method == "FindPartOnRayWithIgnoreList" or method == "Raycast") then
+		local targetPart = getClosestBodyPartToCursor()
+		if targetPart then
+			-- Направляем физический луч строго в выбранную часть тела игрока
+			return targetPart, targetPart.Position, targetPart.Position, targetPart.Material
+		end
+	end
+	return oldNamecall(self, ...)
+end)
+
+-- Хук свойства мыши (Для инструментов игры, считывающих Mouse.Hit)
+local oldIndex
+oldIndex = hookmetamethod(game, "__index", function(self, key)
+	if not checkcaller() and self:IsA("Mouse") and (key == "Hit" or key == "Target") then
+		local targetPart = getClosestBodyPartToCursor()
+		if targetPart then
+			if key == "Hit" then
+				return targetPart.CFrame
+			elseif key == "Target" then
+				return targetPart
+			end
+		end
+	end
+	return oldIndex(self, key)
 end)
 
 
