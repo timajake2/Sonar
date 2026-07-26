@@ -10,7 +10,7 @@ local Camera = workspace.CurrentCamera
 local toggleKey = Enum.KeyCode.RightShift
 local isListeningForKey = false
 
--- Настройки Protect
+-- Настройки
 local antiGrabEnabled = false
 local antiBurnEnabled = false
 local antiFlingEnabled = false
@@ -19,22 +19,16 @@ local gucciAntiGrabEnabled = false
 local antiStunEnabled = false
 local antiKillEnabled = false
 local antiBringEnabled = false
-
--- Настройки Attack
 local flingStrength = 1000
 local superStrengthEnabled = false
 local killGrabEnabled = false
 local kickGrabEnabled = false
-
--- Настройки Automation
 local autoFlingAllEnabled = false
 local autoGrabEnabled = false
 local autoBringItemsEnabled = false
 local autoGrabRadius = 50
 local autoFlingDelay = 0.3
 local bringItemsHeight = 5
-
--- Настройки Player
 local noclipEnabled = false
 local infiniteJumpEnabled = false
 local wsEnabled = false
@@ -43,17 +37,9 @@ local jpEnabled = false
 local jpValue = 50
 local reachEnabled = false
 local reachValue = 8
-
--- Настройки Shaders
-local currentTimeOfDay = nil
-local currentSeason = nil
-
--- Настройки Misc
 local walkWaterEnabled = false
 local espEnabled = false
 local selectedESPPlayer = nil
-
--- Настройки Menu
 local menuScale = 1
 local menuTransparency = 0
 local cornerRadius = 12
@@ -74,6 +60,7 @@ local infiniteJumpConnection = nil
 local antiKillConnection = nil
 local antiBringConnection = nil
 local espConnection = nil
+local antiGrabConnection = nil
 
 local colors = {
 	["Red"] = Color3.fromRGB(180, 40, 40),
@@ -87,7 +74,7 @@ local colors = {
 }
 local selectedColorName = "Default"
 
--- ================= СОЗДАНИЕ UI =================
+-- ================= UI =================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "SolarMenuGui"
 ScreenGui.ResetOnSpawn = false
@@ -96,7 +83,6 @@ ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 550, 0, 420)
 MainFrame.Position = UDim2.new(0.5, -275, 0.5, -210)
 MainFrame.BackgroundColor3 = currentColor
@@ -113,17 +99,16 @@ DragPanel.Size = UDim2.new(1, 0, 0, 35)
 DragPanel.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 DragPanel.BorderSizePixel = 0
 DragPanel.Parent = MainFrame
-
 local DragCorner = Instance.new("UICorner")
 DragCorner.CornerRadius = UDim.new(0, cornerRadius)
 DragCorner.Parent = DragPanel
 
-local HideCornerFix = Instance.new("Frame")
-HideCornerFix.Size = UDim2.new(1, 0, 0, 10)
-HideCornerFix.Position = UDim2.new(0, 0, 1, -10)
-HideCornerFix.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-HideCornerFix.BorderSizePixel = 0
-HideCornerFix.Parent = DragPanel
+local HideFix = Instance.new("Frame")
+HideFix.Size = UDim2.new(1, 0, 0, 10)
+HideFix.Position = UDim2.new(0, 0, 1, -10)
+HideFix.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+HideFix.BorderSizePixel = 0
+HideFix.Parent = DragPanel
 
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1, -20, 1, 0)
@@ -136,14 +121,14 @@ TitleLabel.TextSize = textSize
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = DragPanel
 
-local SeparatorLine = Instance.new("Frame")
-SeparatorLine.Size = UDim2.new(0, 1, 1, -35)
-SeparatorLine.Position = UDim2.new(0, 160, 0, 35)
-SeparatorLine.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-SeparatorLine.BorderSizePixel = 0
-SeparatorLine.Parent = MainFrame
+local Sep = Instance.new("Frame")
+Sep.Size = UDim2.new(0, 1, 1, -35)
+Sep.Position = UDim2.new(0, 160, 0, 35)
+Sep.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+Sep.BorderSizePixel = 0
+Sep.Parent = MainFrame
 
--- ВКЛАДКИ
+-- Вкладки
 local PlayerTab = Instance.new("Frame")
 PlayerTab.Size = UDim2.new(1, -161, 1, -35)
 PlayerTab.Position = UDim2.new(0, 161, 0, 35)
@@ -162,7 +147,7 @@ local AttackTab = Instance.new("Frame")
 AttackTab.Size = UDim2.new(1, -161, 1, -35)
 AttackTab.Position = UDim2.new(0, 161, 0, 35)
 AttackTab.BackgroundTransparency = 1
-AttackTab.Visible = false
+ProtectTab.Visible = false
 AttackTab.Parent = MainFrame
 
 local AutomationTab = Instance.new("Frame")
@@ -193,8 +178,8 @@ MenuTab.BackgroundTransparency = 1
 MenuTab.Visible = false
 MenuTab.Parent = MainFrame
 
--- ================= ФУНКЦИИ ДЛЯ UI =================
-local function createToggle(parent, text, y, callback)
+-- ================= ХЕЛПЕРЫ UI =================
+local function makeToggle(parent, text, y, cb)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 350, 0, 26)
 	btn.Position = UDim2.new(0.5, -175, 0, y)
@@ -204,59 +189,48 @@ local function createToggle(parent, text, y, callback)
 	btn.Font = Enum.Font.SourceSansBold
 	btn.TextSize = 12
 	btn.Parent = parent
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 5)
-	corner.Parent = btn
-	local enabled = false
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
+	local on = false
 	btn.MouseButton1Click:Connect(function()
-		enabled = not enabled
-		if enabled then
-			btn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
-			btn.Text = text .. ": ON"
-		else
-			btn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-			btn.Text = text .. ": OFF"
-		end
-		callback(enabled)
+		on = not on
+		btn.BackgroundColor3 = on and Color3.fromRGB(40, 180, 40) or Color3.fromRGB(180, 40, 40)
+		btn.Text = text .. (on and ": ON" or ": OFF")
+		cb(on)
 	end)
 	return btn
 end
 
-local function createSlider(parent, title, y, minVal, maxVal, defaultVal, callback)
-	local container = Instance.new("Frame")
-	container.Size = UDim2.new(0, 350, 0, 50)
-	container.Position = UDim2.new(0.5, -175, 0, y)
-	container.BackgroundTransparency = 1
-	container.Parent = parent
+local function makeSlider(parent, title, y, min, max, def, cb)
+	local c = Instance.new("Frame")
+	c.Size = UDim2.new(0, 350, 0, 50)
+	c.Position = UDim2.new(0.5, -175, 0, y)
+	c.BackgroundTransparency = 1
+	c.Parent = parent
 
-	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, 0, 0, 16)
-	label.BackgroundTransparency = 1
-	label.Text = title .. ": " .. math.floor(defaultVal)
-	label.TextColor3 = Color3.fromRGB(240, 240, 240)
-	label.Font = Enum.Font.SourceSansSemibold
-	label.TextSize = 12
-	label.Parent = container
+	local lbl = Instance.new("TextLabel")
+	lbl.Size = UDim2.new(1, 0, 0, 16)
+	lbl.BackgroundTransparency = 1
+	lbl.Text = title .. ": " .. (max <= 10 and string.format("%.1f", def) or math.floor(def))
+	lbl.TextColor3 = Color3.fromRGB(240, 240, 240)
+	lbl.Font = Enum.Font.SourceSansSemibold
+	lbl.TextSize = 12
+	lbl.Parent = c
 
 	local bg = Instance.new("Frame")
 	bg.Size = UDim2.new(1, 0, 0, 8)
 	bg.Position = UDim2.new(0, 0, 0, 20)
 	bg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 	bg.BorderSizePixel = 0
-	bg.Parent = container
-	local bgCorner = Instance.new("UICorner")
-	bgCorner.CornerRadius = UDim.new(0, 4)
-	bgCorner.Parent = bg
+	bg.Parent = c
+	Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 4)
 
 	local fill = Instance.new("Frame")
-	local pct = (defaultVal - minVal) / (maxVal - minVal)
+	local pct = (def - min) / (max - min)
 	fill.Size = UDim2.new(pct, 0, 1, 0)
 	fill.BackgroundColor3 = Color3.fromRGB(0, 160, 255)
 	fill.BorderSizePixel = 0
 	fill.Parent = bg
-	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(0, 4)
-	fillCorner.Parent = fill
+	Instance.new("UICorner", fill).CornerRadius = UDim.new(0, 4)
 
 	local btn = Instance.new("ImageButton")
 	btn.Size = UDim2.new(0, 14, 0, 14)
@@ -264,60 +238,43 @@ local function createSlider(parent, title, y, minVal, maxVal, defaultVal, callba
 	btn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	btn.Image = ""
 	btn.Parent = bg
-	local btnCorner = Instance.new("UICorner")
-	btnCorner.CornerRadius = UDim.new(1, 0)
-	btnCorner.Parent = btn
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
 
-	local isSliding = false
-	btn.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then isSliding = true end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then isSliding = false end
-	end)
-	local function update(mx)
+	local sliding = false
+	btn.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true end end)
+	UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then sliding = false end end)
+	local function upd(mx)
 		local bp = bg.AbsolutePosition.X
 		local bs = bg.AbsoluteSize.X
 		local p = math.clamp((mx - bp) / bs, 0, 1)
 		fill.Size = UDim2.new(p, 0, 1, 0)
 		btn.Position = UDim2.new(p, -7, 0.5, -7)
-		local val = minVal + p * (maxVal - minVal)
-		if maxVal <= 10 then val = math.floor(val * 10) / 10
-		else val = math.floor(val) end
-		label.Text = title .. ": " .. val
-		callback(val)
+		local val = min + p * (max - min)
+		if max <= 10 then val = math.floor(val * 10) / 10 else val = math.floor(val) end
+		lbl.Text = title .. ": " .. val
+		cb(val)
 	end
-	UserInputService.InputChanged:Connect(function(input)
-		if isSliding and input.UserInputType == Enum.UserInputType.MouseMovement then
-			update(input.Position.X)
-		end
+	UserInputService.InputChanged:Connect(function(i)
+		if sliding and i.UserInputType == Enum.UserInputType.MouseMovement then upd(i.Position.X) end
 	end)
-	bg.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			isSliding = true
-			update(UserInputService:GetMouseLocation().X)
-		end
+	bg.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 then sliding = true; upd(UserInputService:GetMouseLocation().X) end
 	end)
-	return container
 end
 
-local function createSection(parent, title, y, h)
-	local container = Instance.new("Frame")
-	container.Size = UDim2.new(0, 360, 0, h)
-	container.Position = UDim2.new(0.5, -180, 0, y)
-	container.BackgroundTransparency = 1
-	container.Parent = parent
-
+local function makeSection(parent, title, y, h)
+	local c = Instance.new("Frame")
+	c.Size = UDim2.new(0, 360, 0, h)
+	c.Position = UDim2.new(0.5, -180, 0, y)
+	c.BackgroundTransparency = 1
+	c.Parent = parent
 	local border = Instance.new("Frame")
 	border.Size = UDim2.new(1, 0, 1, 0)
 	border.BackgroundTransparency = 1
 	border.BorderSizePixel = 2
 	border.BorderColor3 = Color3.fromRGB(100, 100, 100)
-	border.Parent = container
-	local bCorner = Instance.new("UICorner")
-	bCorner.CornerRadius = UDim.new(0, 8)
-	bCorner.Parent = border
-
+	border.Parent = c
+	Instance.new("UICorner", border).CornerRadius = UDim.new(0, 8)
 	local lbl = Instance.new("TextLabel")
 	lbl.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 	lbl.Text = " " .. title .. " "
@@ -327,43 +284,39 @@ local function createSection(parent, title, y, h)
 	lbl.Position = UDim2.new(0, 15, 0, -10)
 	lbl.AutomaticSize = Enum.AutomaticSize.X
 	lbl.Size = UDim2.new(0, 0, 0, 20)
-	lbl.Parent = container
-	local lCorner = Instance.new("UICorner")
-	lCorner.CornerRadius = UDim.new(0, 4)
-	lCorner.Parent = lbl
-	return container
+	lbl.Parent = c
+	Instance.new("UICorner", lbl).CornerRadius = UDim.new(0, 4)
+	return c
 end
 
--- ================= PLAYER TAB =================
-local pScroll = Instance.new("ScrollingFrame")
-pScroll.Size = UDim2.new(1, 0, 1, 0)
-pScroll.BackgroundTransparency = 1
-pScroll.ScrollBarThickness = 4
-pScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-pScroll.CanvasSize = UDim2.new(0, 0, 0, 340)
-pScroll.Parent = PlayerTab
+-- ================= PLAYER =================
+local ps = Instance.new("ScrollingFrame")
+ps.Size = UDim2.new(1, 0, 1, 0)
+ps.BackgroundTransparency = 1
+ps.ScrollBarThickness = 4
+ps.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+ps.CanvasSize = UDim2.new(0, 0, 0, 340)
+ps.Parent = PlayerTab
 
--- WalkSpeed
-createToggle(pScroll, "WalkSpeed Changer", 5, function(e)
+makeToggle(ps, "WalkSpeed Changer", 5, function(e)
 	wsEnabled = e
 	if not e and LocalPlayer.Character then
 		local h = LocalPlayer.Character:FindFirstChild("Humanoid")
 		if h then h.WalkSpeed = 16 end
 	end
 end)
-createSlider(pScroll, "WalkSpeed", 34, 16, 500, 16, function(v) wsValue = v end)
+makeSlider(ps, "WalkSpeed", 34, 16, 500, 16, function(v) wsValue = v end)
 
--- JumpPower
-createToggle(pScroll, "JumpPower Changer", 87, function(e)
+makeToggle(ps, "JumpPower Changer", 87, function(e)
 	jpEnabled = e
 	if not e and LocalPlayer.Character then
 		local h = LocalPlayer.Character:FindFirstChild("Humanoid")
 		if h then h.JumpPower = 50 end
 	end
 end)
-createSlider(pScroll, "JumpPower", 116, 50, 500, 50, function(v) jpValue = v end)
+makeSlider(ps, "JumpPower", 116, 50, 500, 50, function(v) jpValue = v end)
 
-createToggle(pScroll, "Infinite Jump", 169, function(e)
+makeToggle(ps, "Infinite Jump", 169, function(e)
 	infiniteJumpEnabled = e
 	if e then
 		infiniteJumpConnection = UserInputService.JumpRequest:Connect(function()
@@ -378,7 +331,7 @@ createToggle(pScroll, "Infinite Jump", 169, function(e)
 	end
 end)
 
-createToggle(pScroll, "Noclip", 198, function(e)
+makeToggle(ps, "Noclip", 198, function(e)
 	noclipEnabled = e
 	if e then
 		noclipConnection = RunService.Stepped:Connect(function()
@@ -398,49 +351,52 @@ createToggle(pScroll, "Noclip", 198, function(e)
 	end
 end)
 
-createToggle(pScroll, "Reach Mod", 227, function(e) reachEnabled = e end)
-createSlider(pScroll, "Reach", 256, 8, 1000, 8, function(v) reachValue = v end)
+makeToggle(ps, "Reach Mod", 227, function(e) reachEnabled = e end)
+makeSlider(ps, "Reach", 256, 8, 1000, 8, function(v) reachValue = v end)
 
--- ================= PROTECT TAB =================
-local prScroll = Instance.new("ScrollingFrame")
-prScroll.Size = UDim2.new(1, 0, 1, 0)
-prScroll.BackgroundTransparency = 1
-prScroll.ScrollBarThickness = 4
-prScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-prScroll.CanvasSize = UDim2.new(0, 0, 0, 240)
-prScroll.Parent = ProtectTab
+-- ================= PROTECT =================
+local prs = Instance.new("ScrollingFrame")
+prs.Size = UDim2.new(1, 0, 1, 0)
+prs.BackgroundTransparency = 1
+prs.ScrollBarThickness = 4
+prs.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+prs.CanvasSize = UDim2.new(0, 0, 0, 240)
+prs.Parent = ProtectTab
 
-createToggle(prScroll, "Anti-Grab", 5, function(e) antiGrabEnabled = e end)
-createToggle(prScroll, "Anti-Burn", 34, function(e) antiBurnEnabled = e end)
-createToggle(prScroll, "Anti-Fling", 63, function(e) antiFlingEnabled = e end)
-createToggle(prScroll, "Anti-Kick", 92, function(e)
+makeToggle(prs, "Anti-Grab", 5, function(e)
+	antiGrabEnabled = e
+	if e then startAntiGrab() else stopAntiGrab() end
+end)
+makeToggle(prs, "Anti-Burn", 34, function(e) antiBurnEnabled = e end)
+makeToggle(prs, "Anti-Fling", 63, function(e) antiFlingEnabled = e end)
+makeToggle(prs, "Anti-Kick", 92, function(e)
 	antiKickEnabled = e
 	if e then spawnAntiKick() else removeAntiKick() end
 end)
-createToggle(prScroll, "Gucci Anti-Grab", 121, function(e) gucciAntiGrabEnabled = e end)
-createToggle(prScroll, "Anti-Stun", 150, function(e) antiStunEnabled = e end)
-createToggle(prScroll, "Anti-Kill", 179, function(e)
+makeToggle(prs, "Gucci Anti-Grab", 121, function(e) gucciAntiGrabEnabled = e end)
+makeToggle(prs, "Anti-Stun", 150, function(e) antiStunEnabled = e end)
+makeToggle(prs, "Anti-Kill", 179, function(e)
 	antiKillEnabled = e
 	if e then startAntiKill() else stopAntiKill() end
 end)
-createToggle(prScroll, "Anti-Bring", 208, function(e)
+makeToggle(prs, "Anti-Bring", 208, function(e)
 	antiBringEnabled = e
 	if e then startAntiBring() else stopAntiBring() end
 end)
 
--- ================= ATTACK TAB =================
-local aScroll = Instance.new("ScrollingFrame")
-aScroll.Size = UDim2.new(1, 0, 1, 0)
-aScroll.BackgroundTransparency = 1
-aScroll.ScrollBarThickness = 4
-aScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-aScroll.CanvasSize = UDim2.new(0, 0, 0, 180)
-aScroll.Parent = AttackTab
+-- ================= ATTACK =================
+local ats = Instance.new("ScrollingFrame")
+ats.Size = UDim2.new(1, 0, 1, 0)
+ats.BackgroundTransparency = 1
+ats.ScrollBarThickness = 4
+ats.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+ats.CanvasSize = UDim2.new(0, 0, 0, 180)
+ats.Parent = AttackTab
 
-createToggle(aScroll, "Super Strength", 5, function(e) superStrengthEnabled = e end)
-createToggle(aScroll, "Kill Grab", 34, function(e) killGrabEnabled = e end)
-createToggle(aScroll, "Kick Grab", 63, function(e) kickGrabEnabled = e end)
-createSlider(aScroll, "Fling Strength", 92, 250, 2500, 1000, function(v) flingStrength = v end)
+makeToggle(ats, "Super Strength", 5, function(e) superStrengthEnabled = e end)
+makeToggle(ats, "Kill Grab", 34, function(e) killGrabEnabled = e end)
+makeToggle(ats, "Kick Grab", 63, function(e) kickGrabEnabled = e end)
+makeSlider(ats, "Fling Strength", 92, 250, 2500, 1000, function(v) flingStrength = v end)
 
 local lagBtn = Instance.new("TextButton")
 lagBtn.Size = UDim2.new(0, 350, 0, 26)
@@ -450,53 +406,51 @@ lagBtn.Text = "Lag Server (Coming Soon)"
 lagBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 lagBtn.Font = Enum.Font.SourceSansBold
 lagBtn.TextSize = 12
-lagBtn.Parent = aScroll
-local lagCorner = Instance.new("UICorner")
-lagCorner.CornerRadius = UDim.new(0, 5)
-lagCorner.Parent = lagBtn
+lagBtn.Parent = ats
+Instance.new("UICorner", lagBtn).CornerRadius = UDim.new(0, 5)
 
--- ================= AUTOMATION TAB =================
-local auScroll = Instance.new("ScrollingFrame")
-auScroll.Size = UDim2.new(1, 0, 1, 0)
-auScroll.BackgroundTransparency = 1
-auScroll.ScrollBarThickness = 4
-auScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-auScroll.CanvasSize = UDim2.new(0, 0, 0, 290)
-auScroll.Parent = AutomationTab
+-- ================= AUTOMATION =================
+local aus = Instance.new("ScrollingFrame")
+aus.Size = UDim2.new(1, 0, 1, 0)
+aus.BackgroundTransparency = 1
+aus.ScrollBarThickness = 4
+aus.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+aus.CanvasSize = UDim2.new(0, 0, 0, 290)
+aus.Parent = AutomationTab
 
-createToggle(auScroll, "Auto Fling All", 5, function(e)
+makeToggle(aus, "Auto Fling All", 5, function(e)
 	autoFlingAllEnabled = e
 	if e then startAutoFlingAll() else stopAutoFlingAll() end
 end)
-createToggle(auScroll, "Auto Grab", 34, function(e)
+makeToggle(aus, "Auto Grab", 34, function(e)
 	autoGrabEnabled = e
 	if e then startAutoGrab() else stopAutoGrab() end
 end)
-createToggle(auScroll, "Auto Bring Items", 63, function(e)
+makeToggle(aus, "Auto Bring Items", 63, function(e)
 	autoBringItemsEnabled = e
 	if e then startAutoBringItems() else stopAutoBringItems() end
 end)
-createSlider(auScroll, "Fling Delay", 92, 0.1, 2, 0.3, function(v) autoFlingDelay = v end)
-createSlider(auScroll, "Grab Radius", 145, 10, 200, 50, function(v) autoGrabRadius = v end)
-createSlider(auScroll, "Bring Height", 198, 1, 20, 5, function(v) bringItemsHeight = v end)
+makeSlider(aus, "Fling Delay", 92, 0.1, 2, 0.3, function(v) autoFlingDelay = v end)
+makeSlider(aus, "Grab Radius", 145, 10, 200, 50, function(v) autoGrabRadius = v end)
+makeSlider(aus, "Bring Height", 198, 1, 20, 5, function(v) bringItemsHeight = v end)
 
--- ================= SHADERS TAB =================
-local sScroll = Instance.new("ScrollingFrame")
-sScroll.Size = UDim2.new(1, 0, 1, 0)
-sScroll.BackgroundTransparency = 1
-sScroll.ScrollBarThickness = 4
-sScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-sScroll.CanvasSize = UDim2.new(0, 0, 0, 370)
-sScroll.Parent = ShadersTab
+-- ================= SHADERS =================
+local shs = Instance.new("ScrollingFrame")
+shs.Size = UDim2.new(1, 0, 1, 0)
+shs.BackgroundTransparency = 1
+shs.ScrollBarThickness = 4
+shs.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+shs.CanvasSize = UDim2.new(0, 0, 0, 370)
+shs.Parent = ShadersTab
 
-local timeBlock = createSection(sScroll, "Time Of Day", 10, 160)
-local timeData = {
+local tb = makeSection(shs, "Time Of Day", 10, 160)
+local tdata = {
 	{"Day", 12, 3, Color3.fromRGB(200, 200, 200), Color3.fromRGB(180, 210, 255), 10000},
 	{"Sunset", 18, 1.5, Color3.fromRGB(255, 150, 80), Color3.fromRGB(255, 120, 50), 5000},
 	{"Night", 0, 0.5, Color3.fromRGB(50, 50, 100), Color3.fromRGB(30, 30, 60), 3000},
 	{"Sunrise", 6, 1.5, Color3.fromRGB(255, 200, 150), Color3.fromRGB(255, 180, 120), 7000}
 }
-for i, d in ipairs(timeData) do
+for i, d in ipairs(tdata) do
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 320, 0, 26)
 	btn.Position = UDim2.new(0, 20, 0, 25 + (i-1)*32)
@@ -505,30 +459,27 @@ for i, d in ipairs(timeData) do
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.Font = Enum.Font.SourceSansBold
 	btn.TextSize = 12
-	btn.Parent = timeBlock
-	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 5); c.Parent = btn
+	btn.Parent = tb
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
 	btn.MouseButton1Click:Connect(function()
-		currentTimeOfDay = d[1]
 		Lighting.ClockTime = d[2]
 		Lighting.Brightness = d[3]
 		Lighting.OutdoorAmbient = d[4]
 		Lighting.FogColor = d[5]
 		Lighting.FogEnd = d[6]
-		for _, ch in ipairs(timeBlock:GetChildren()) do
-			if ch:IsA("TextButton") then ch.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end
-		end
+		for _, ch in ipairs(tb:GetChildren()) do if ch:IsA("TextButton") then ch.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end end
 		btn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
 	end)
 end
 
-local seasonBlock = createSection(sScroll, "Season", 185, 160)
-local seasonData = {
+local sb = makeSection(shs, "Season", 185, 160)
+local sdata = {
 	{"Winter", Color3.fromRGB(200, 210, 230), Color3.fromRGB(230, 235, 245), 4000, 2},
 	{"Spring", Color3.fromRGB(180, 220, 180), Color3.fromRGB(200, 240, 200), 8000, 2.5},
 	{"Summer", Color3.fromRGB(255, 240, 200), Color3.fromRGB(255, 255, 200), 15000, 3},
 	{"Autumn", Color3.fromRGB(220, 180, 140), Color3.fromRGB(200, 150, 100), 6000, 1.8}
 }
-for i, d in ipairs(seasonData) do
+for i, d in ipairs(sdata) do
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 320, 0, 26)
 	btn.Position = UDim2.new(0, 20, 0, 25 + (i-1)*32)
@@ -537,46 +488,38 @@ for i, d in ipairs(seasonData) do
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.Font = Enum.Font.SourceSansBold
 	btn.TextSize = 12
-	btn.Parent = seasonBlock
-	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 5); c.Parent = btn
+	btn.Parent = sb
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
 	btn.MouseButton1Click:Connect(function()
-		currentSeason = d[1]
 		Lighting.OutdoorAmbient = d[2]
 		Lighting.FogColor = d[3]
 		Lighting.FogEnd = d[4]
 		Lighting.Brightness = d[5]
-		for _, ch in ipairs(seasonBlock:GetChildren()) do
-			if ch:IsA("TextButton") then ch.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end
-		end
+		for _, ch in ipairs(sb:GetChildren()) do if ch:IsA("TextButton") then ch.BackgroundColor3 = Color3.fromRGB(60, 60, 60) end end
 		btn.BackgroundColor3 = Color3.fromRGB(0, 150, 200)
 	end)
 end
 
--- ================= MISC TAB =================
-local mScroll = Instance.new("ScrollingFrame")
-mScroll.Size = UDim2.new(1, 0, 1, 0)
-mScroll.BackgroundTransparency = 1
-mScroll.ScrollBarThickness = 4
-mScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-mScroll.CanvasSize = UDim2.new(0, 0, 0, 280)
-mScroll.Parent = MiscTab
+-- ================= MISC =================
+local ms = Instance.new("ScrollingFrame")
+ms.Size = UDim2.new(1, 0, 1, 0)
+ms.BackgroundTransparency = 1
+ms.ScrollBarThickness = 4
+ms.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+ms.CanvasSize = UDim2.new(0, 0, 0, 250)
+ms.Parent = MiscTab
 
-createSlider(mScroll, "FOV", 5, 30, 120, Camera.FieldOfView, function(v) Camera.FieldOfView = v end)
-createToggle(mScroll, "Walk Water", 58, function(e)
+makeSlider(ms, "FOV", 5, 30, 120, Camera.FieldOfView, function(v) Camera.FieldOfView = v end)
+makeToggle(ms, "Walk Water", 58, function(e)
 	walkWaterEnabled = e
-	if e then
+	local function setWater()
 		for _, p in ipairs(Workspace:GetDescendants()) do
 			if p:IsA("BasePart") and p.Material == Enum.Material.Water then
-				p.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 100, 0)
-			end
-		end
-	else
-		for _, p in ipairs(Workspace:GetDescendants()) do
-			if p:IsA("BasePart") and p.Material == Enum.Material.Water then
-				p.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+				p.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, walkWaterEnabled and 100 or 0, 0)
 			end
 		end
 	end
+	setWater()
 end)
 
 -- ESP
@@ -588,19 +531,19 @@ espTitle.Text = "ESP Player Highlight"
 espTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
 espTitle.Font = Enum.Font.SourceSansBold
 espTitle.TextSize = 13
-espTitle.Parent = mScroll
+espTitle.Parent = ms
 
 local espDrop = Instance.new("TextButton")
 espDrop.Size = UDim2.new(0, 350, 0, 28)
 espDrop.Position = UDim2.new(0.5, -175, 0, 110)
 espDrop.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-espDrop.Text = "Выберите игрока..."
+espDrop.Text = "Select player..."
 espDrop.TextColor3 = Color3.fromRGB(200, 200, 200)
 espDrop.Font = Enum.Font.SourceSans
 espDrop.TextSize = 12
 espDrop.TextXAlignment = Enum.TextXAlignment.Left
-espDrop.Parent = mScroll
-local dCorner = Instance.new("UICorner"); dCorner.CornerRadius = UDim.new(0, 5); dCorner.Parent = espDrop
+espDrop.Parent = ms
+Instance.new("UICorner", espDrop).CornerRadius = UDim.new(0, 5)
 
 local espList = Instance.new("ScrollingFrame")
 espList.Size = UDim2.new(0, 350, 0, 100)
@@ -612,9 +555,10 @@ espList.Visible = false
 espList.ScrollBarThickness = 4
 espList.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
 espList.CanvasSize = UDim2.new(0, 0, 0, 0)
-espList.Parent = mScroll
-local lCorner = Instance.new("UICorner"); lCorner.CornerRadius = UDim.new(0, 5); lCorner.Parent = espList
-local lLayout = Instance.new("UIListLayout"); lLayout.Padding = UDim.new(0, 2); lLayout.Parent = espList
+espList.Parent = ms
+Instance.new("UICorner", espList).CornerRadius = UDim.new(0, 5)
+local ll = Instance.new("UIListLayout", espList)
+ll.Padding = UDim.new(0, 2)
 
 local function updateESPList()
 	for _, c in ipairs(espList:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
@@ -628,7 +572,7 @@ local function updateESPList()
 			btn.TextColor3 = Color3.fromRGB(230, 230, 230)
 			btn.Font = Enum.Font.SourceSans; btn.TextSize = 12; btn.TextXAlignment = Enum.TextXAlignment.Left
 			btn.Parent = espList
-			local bc = Instance.new("UICorner"); bc.CornerRadius = UDim.new(0, 4); bc.Parent = btn
+			Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 			btn.MouseButton1Click:Connect(function()
 				selectedESPPlayer = p
 				espDrop.Text = "ESP: " .. p.Name
@@ -640,7 +584,6 @@ local function updateESPList()
 	espList.CanvasSize = UDim2.new(0, 0, 0, th)
 end
 updateESPList()
-
 espDrop.MouseButton1Click:Connect(function() updateESPList(); espList.Visible = not espList.Visible end)
 
 local espToggle = Instance.new("TextButton")
@@ -650,23 +593,17 @@ espToggle.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
 espToggle.Text = "ESP: OFF"
 espToggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 espToggle.Font = Enum.Font.SourceSansBold; espToggle.TextSize = 12
-espToggle.Parent = mScroll
-local etCorner = Instance.new("UICorner"); etCorner.CornerRadius = UDim.new(0, 5); etCorner.Parent = espToggle
-
+espToggle.Parent = ms
+Instance.new("UICorner", espToggle).CornerRadius = UDim.new(0, 5)
 espToggle.MouseButton1Click:Connect(function()
 	espEnabled = not espEnabled
 	if espEnabled then
-		if not selectedESPPlayer then
-			espToggle.Text = "ESP: ON (No target!)"
-			espToggle.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
-		else
-			espToggle.Text = "ESP: ON (" .. selectedESPPlayer.Name .. ")"
-			espToggle.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
-		end
+		espToggle.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
+		espToggle.Text = "ESP: ON" .. (selectedESPPlayer and " (" .. selectedESPPlayer.Name .. ")" or "")
 		startESP()
 	else
-		espToggle.Text = "ESP: OFF"
 		espToggle.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+		espToggle.Text = "ESP: OFF"
 		stopESP()
 	end
 end)
@@ -674,51 +611,39 @@ end)
 UserInputService.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 and espList.Visible then
 		local mp = UserInputService:GetMouseLocation()
-		if not (mp.X >= espList.AbsolutePosition.X and mp.X <= espList.AbsolutePosition.X + espList.AbsoluteSize.X and
-			mp.Y >= espList.AbsolutePosition.Y and mp.Y <= espList.AbsolutePosition.Y + espList.AbsoluteSize.Y) and
-		   not (mp.X >= espDrop.AbsolutePosition.X and mp.X <= espDrop.AbsolutePosition.X + espDrop.AbsoluteSize.X and
-			mp.Y >= espDrop.AbsolutePosition.Y and mp.Y <= espDrop.AbsolutePosition.Y + espDrop.AbsoluteSize.Y) then
-			espList.Visible = false
-		end
+		local inList = mp.X >= espList.AbsolutePosition.X and mp.X <= espList.AbsolutePosition.X + espList.AbsoluteSize.X and
+			mp.Y >= espList.AbsolutePosition.Y and mp.Y <= espList.AbsolutePosition.Y + espList.AbsoluteSize.Y
+		local inDrop = mp.X >= espDrop.AbsolutePosition.X and mp.X <= espDrop.AbsolutePosition.X + espDrop.AbsoluteSize.X and
+			mp.Y >= espDrop.AbsolutePosition.Y and mp.Y <= espDrop.AbsolutePosition.Y + espDrop.AbsoluteSize.Y
+		if not inList and not inDrop then espList.Visible = false end
 	end
 end)
 
 function startESP()
 	stopESP()
+	if not selectedESPPlayer then return end
 	espConnection = RunService.RenderStepped:Connect(function()
-		if not espEnabled or not selectedESPPlayer or not selectedESPPlayer.Character then return end
-		local char = selectedESPPlayer.Character
-		for _, part in ipairs(char:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.BrickColor = BrickColor.new("Bright red")
-				part.Transparency = 0.5
-				part.Material = Enum.Material.ForceField
+		if not selectedESPPlayer.Character then return end
+		local root = selectedESPPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if root then
+			if not root:FindFirstChild("ESPBox") then
+				local box = Instance.new("SelectionBox")
+				box.Name = "ESPBox"
+				box.Adornee = root
+				box.Color3 = Color3.fromRGB(255, 0, 0)
+				box.Transparency = 0.5
+				box.LineThickness = 0.08
+				box.Parent = root
 			end
-		end
-		local root = char:FindFirstChild("HumanoidRootPart")
-		if root and not root:FindFirstChild("ESPBox") then
-			local box = Instance.new("SelectionBox")
-			box.Name = "ESPBox"
-			box.Adornee = root
-			box.Color3 = Color3.fromRGB(255, 50, 50)
-			box.Transparency = 0.6
-			box.LineThickness = 0.05
-			box.Parent = root
 		end
 	end)
 end
 
 function stopESP()
 	if espConnection then espConnection:Disconnect(); espConnection = nil end
-	for _, player in ipairs(Players:GetPlayers()) do
-		if player.Character then
-			for _, part in ipairs(player.Character:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Transparency = 0
-					part.Material = Enum.Material.Plastic
-				end
-			end
-			local root = player.Character:FindFirstChild("HumanoidRootPart")
+	for _, p in ipairs(Players:GetPlayers()) do
+		if p.Character then
+			local root = p.Character:FindFirstChild("HumanoidRootPart")
 			if root then
 				local box = root:FindFirstChild("ESPBox")
 				if box then box:Destroy() end
@@ -727,32 +652,32 @@ function stopESP()
 	end
 end
 
--- ================= MENU TAB =================
-local muScroll = Instance.new("ScrollingFrame")
-muScroll.Size = UDim2.new(1, 0, 1, 0)
-muScroll.BackgroundTransparency = 1
-muScroll.ScrollBarThickness = 4
-muScroll.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
-muScroll.CanvasSize = UDim2.new(0, 0, 0, 750)
-muScroll.Parent = MenuTab
+-- ================= MENU =================
+local mus = Instance.new("ScrollingFrame")
+mus.Size = UDim2.new(1, 0, 1, 0)
+mus.BackgroundTransparency = 1
+mus.ScrollBarThickness = 4
+mus.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
+mus.CanvasSize = UDim2.new(0, 0, 0, 750)
+mus.Parent = MenuTab
 
-createSlider(muScroll, "Scale Menu", 5, 0.5, 2, 1, function(v)
+makeSlider(mus, "Scale Menu", 5, 0.5, 2, 1, function(v)
 	menuScale = v
 	MainFrame.Size = UDim2.new(0, 550*menuScale, 0, 420*menuScale)
 	MainFrame.Position = UDim2.new(0.5, -275*menuScale, 0.5, -210*menuScale)
 end)
 
-local colTitle = Instance.new("TextLabel")
-colTitle.Size = UDim2.new(0, 350, 0, 18)
-colTitle.Position = UDim2.new(0.5, -175, 0, 58)
-colTitle.BackgroundTransparency = 1
-colTitle.Text = "Change Color"
-colTitle.TextColor3 = Color3.fromRGB(240, 240, 240)
-colTitle.Font = Enum.Font.SourceSansBold; colTitle.TextSize = 13
-colTitle.Parent = muScroll
+local ct = Instance.new("TextLabel")
+ct.Size = UDim2.new(0, 350, 0, 18)
+ct.Position = UDim2.new(0.5, -175, 0, 58)
+ct.BackgroundTransparency = 1
+ct.Text = "Change Color"
+ct.TextColor3 = Color3.fromRGB(240, 240, 240)
+ct.Font = Enum.Font.SourceSansBold; ct.TextSize = 13
+ct.Parent = mus
 
-local colNames = {"Red", "Blue", "Green", "Pink", "Purple", "White", "Brown", "Rainbow Gradient"}
-for i, name in ipairs(colNames) do
+local cnames = {"Red", "Blue", "Green", "Pink", "Purple", "White", "Brown", "Rainbow Gradient"}
+for i, name in ipairs(cnames) do
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 170, 0, 22)
 	btn.Position = UDim2.new(0.5, -175 + ((i-1)%2)*175, 0, 80 + math.floor((i-1)/2)*26)
@@ -760,8 +685,8 @@ for i, name in ipairs(colNames) do
 	btn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	btn.Font = Enum.Font.SourceSansBold; btn.TextSize = 10
 	btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	btn.Parent = muScroll
-	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 4); c.Parent = btn
+	btn.Parent = mus
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 	btn.MouseButton1Click:Connect(function()
 		selectedColorName = name
 		if name == "Rainbow Gradient" then
@@ -787,7 +712,7 @@ for i, name in ipairs(colNames) do
 	end)
 end
 
-createSlider(muScroll, "Brightness", 190, 0, 1, 1, function(v)
+makeSlider(mus, "Brightness", 190, 0, 1, 1, function(v)
 	brightnessMultiplier = v
 	if selectedColorName ~= "Rainbow Gradient" then
 		local r = math.clamp(currentColor.R * brightnessMultiplier, 0, 1)
@@ -797,61 +722,57 @@ createSlider(muScroll, "Brightness", 190, 0, 1, 1, function(v)
 	end
 end)
 
-local nameCont = Instance.new("Frame")
-nameCont.Size = UDim2.new(0, 350, 0, 45)
-nameCont.Position = UDim2.new(0.5, -175, 0, 245)
-nameCont.BackgroundTransparency = 1
-nameCont.Parent = muScroll
-local nameT = Instance.new("TextLabel")
-nameT.Size = UDim2.new(1, 0, 0, 16)
-nameT.BackgroundTransparency = 1
-nameT.Text = "Change Name (Solar)"
-nameT.TextColor3 = Color3.fromRGB(240, 240, 240)
-nameT.Font = Enum.Font.SourceSansSemibold; nameT.TextSize = 12
-nameT.Parent = nameCont
-local nameInp = Instance.new("TextBox")
-nameInp.Size = UDim2.new(0, 190, 0, 26)
-nameInp.Position = UDim2.new(0, 0, 0, 19)
-nameInp.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-nameInp.PlaceholderText = "Enter new name..."
-nameInp.TextColor3 = Color3.fromRGB(255, 255, 255)
-nameInp.Font = Enum.Font.SourceSans; nameInp.TextSize = 12
-nameInp.Parent = nameCont
-local niCorner = Instance.new("UICorner"); niCorner.CornerRadius = UDim.new(0, 4); niCorner.Parent = nameInp
-local nameApply = Instance.new("TextButton")
-nameApply.Size = UDim2.new(0, 75, 0, 26)
-nameApply.Position = UDim2.new(0, 200, 0, 19)
-nameApply.BackgroundColor3 = Color3.fromRGB(0, 140, 200)
-nameApply.Text = "Apply"
-nameApply.TextColor3 = Color3.fromRGB(255, 255, 255)
-nameApply.Font = Enum.Font.SourceSansBold; nameApply.TextSize = 12
-nameApply.Parent = nameCont
-local naCorner = Instance.new("UICorner"); naCorner.CornerRadius = UDim.new(0, 4); naCorner.Parent = nameApply
-nameApply.MouseButton1Click:Connect(function()
-	if nameInp.Text ~= "" then
-		menuName = nameInp.Text .. " (Solar)"
-		TitleLabel.Text = menuName
-		nameInp.Text = ""
-	end
+local nc = Instance.new("Frame")
+nc.Size = UDim2.new(0, 350, 0, 45)
+nc.Position = UDim2.new(0.5, -175, 0, 245)
+nc.BackgroundTransparency = 1
+nc.Parent = mus
+local nt = Instance.new("TextLabel")
+nt.Size = UDim2.new(1, 0, 0, 16)
+nt.BackgroundTransparency = 1
+nt.Text = "Change Name (Solar)"
+nt.TextColor3 = Color3.fromRGB(240, 240, 240)
+nt.Font = Enum.Font.SourceSansSemibold; nt.TextSize = 12
+nt.Parent = nc
+local ni = Instance.new("TextBox")
+ni.Size = UDim2.new(0, 190, 0, 26)
+ni.Position = UDim2.new(0, 0, 0, 19)
+ni.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ni.PlaceholderText = "Enter new name..."
+ni.TextColor3 = Color3.fromRGB(255, 255, 255)
+ni.Font = Enum.Font.SourceSans; ni.TextSize = 12
+ni.Parent = nc
+Instance.new("UICorner", ni).CornerRadius = UDim.new(0, 4)
+local na = Instance.new("TextButton")
+na.Size = UDim2.new(0, 75, 0, 26)
+na.Position = UDim2.new(0, 200, 0, 19)
+na.BackgroundColor3 = Color3.fromRGB(0, 140, 200)
+na.Text = "Apply"
+na.TextColor3 = Color3.fromRGB(255, 255, 255)
+na.Font = Enum.Font.SourceSansBold; na.TextSize = 12
+na.Parent = nc
+Instance.new("UICorner", na).CornerRadius = UDim.new(0, 4)
+na.MouseButton1Click:Connect(function()
+	if ni.Text ~= "" then menuName = ni.Text .. " (Solar)"; TitleLabel.Text = menuName; ni.Text = "" end
 end)
 
-createSlider(muScroll, "Transparency", 295, 0, 1, 0, function(v)
+makeSlider(mus, "Transparency", 295, 0, 1, 0, function(v)
 	menuTransparency = v
 	MainFrame.BackgroundTransparency = menuTransparency
 	DragPanel.BackgroundTransparency = menuTransparency * 0.5
 end)
-createSlider(muScroll, "Corner Radius", 348, 0, 30, 12, function(v)
+makeSlider(mus, "Corner Radius", 348, 0, 30, 12, function(v)
 	cornerRadius = v
 	MainCorner.CornerRadius = UDim.new(0, cornerRadius)
 	DragCorner.CornerRadius = UDim.new(0, cornerRadius)
 end)
-createSlider(muScroll, "Text Size", 401, 8, 38, 16, function(v)
+makeSlider(mus, "Text Size", 401, 8, 38, 16, function(v)
 	textSize = v
 	TitleLabel.TextSize = textSize
 end)
 
 -- ================= НАВИГАЦИЯ =================
-local function createNav(name, y, tab, all)
+local function nav(name, y, tab, all)
 	local btn = Instance.new("TextButton")
 	btn.Size = UDim2.new(0, 140, 0, 28)
 	btn.Position = UDim2.new(0, 10, 0, y)
@@ -860,7 +781,7 @@ local function createNav(name, y, tab, all)
 	btn.TextColor3 = Color3.fromRGB(240, 240, 240)
 	btn.Font = Enum.Font.SourceSansSemibold; btn.TextSize = 13
 	btn.Parent = MainFrame
-	local c = Instance.new("UICorner"); c.CornerRadius = UDim.new(0, 5); c.Parent = btn
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 5)
 	btn.MouseButton1Click:Connect(function()
 		PlayerTab.Visible = false; ProtectTab.Visible = false; AttackTab.Visible = false
 		AutomationTab.Visible = false; ShadersTab.Visible = false; MiscTab.Visible = false; MenuTab.Visible = false
@@ -871,17 +792,16 @@ local function createNav(name, y, tab, all)
 	return btn
 end
 
-local navs = {}
-navs[1] = createNav("Player", 50, PlayerTab, navs)
-navs[2] = createNav("Protect", 82, ProtectTab, navs)
-navs[3] = createNav("Attack", 114, AttackTab, navs)
-navs[4] = createNav("Automation", 146, AutomationTab, navs)
-navs[5] = createNav("Shaders", 178, ShadersTab, navs)
-navs[6] = createNav("Misc", 210, MiscTab, navs)
-navs[7] = createNav("Menu", 242, MenuTab, navs)
-navs[1].BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+local n = {}
+n[1] = nav("Player", 50, PlayerTab, n)
+n[2] = nav("Protect", 82, ProtectTab, n)
+n[3] = nav("Attack", 114, AttackTab, n)
+n[4] = nav("Automation", 146, AutomationTab, n)
+n[5] = nav("Shaders", 178, ShadersTab, n)
+n[6] = nav("Misc", 210, MiscTab, n)
+n[7] = nav("Menu", 242, MenuTab, n)
+n[1].BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 
--- Bind
 local bindBtn = Instance.new("TextButton")
 bindBtn.Size = UDim2.new(0, 140, 0, 28)
 bindBtn.Position = UDim2.new(0, 10, 0, 274)
@@ -890,7 +810,7 @@ bindBtn.Text = "Bind: " .. toggleKey.Name
 bindBtn.TextColor3 = Color3.fromRGB(240, 240, 240)
 bindBtn.Font = Enum.Font.SourceSansSemibold; bindBtn.TextSize = 13
 bindBtn.Parent = MainFrame
-local biCorner = Instance.new("UICorner"); biCorner.CornerRadius = UDim.new(0, 5); biCorner.Parent = bindBtn
+Instance.new("UICorner", bindBtn).CornerRadius = UDim.new(0, 5)
 bindBtn.MouseButton1Click:Connect(function()
 	if not isListeningForKey then isListeningForKey = true; bindBtn.Text = "Press any key..." end
 end)
@@ -908,7 +828,7 @@ av.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 av.BorderSizePixel = 0
 av.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.AvatarBust, Enum.ThumbnailSize.Size100x100)
 av.Parent = pf
-local avCorner = Instance.new("UICorner"); avCorner.CornerRadius = UDim.new(0.5, 0); avCorner.Parent = av
+Instance.new("UICorner", av).CornerRadius = UDim.new(0.5, 0)
 local un = Instance.new("TextLabel")
 un.Size = UDim2.new(1, -48, 1, 0)
 un.Position = UDim2.new(0, 48, 0, 0)
@@ -931,7 +851,59 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- ================= ЗАЩИТА =================
+-- ================= ANTI-GRAB (МОЩНЫЙ) =================
+function startAntiGrab()
+	antiGrabConnection = RunService.RenderStepped:Connect(function()
+		local char = LocalPlayer.Character
+		if not char then return end
+		local root = char:FindFirstChild("HumanoidRootPart")
+		if not root then return end
+
+		-- Обнуляем скорость захвата
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+
+		-- Удаляем все чужие Weld/Rope/Constraint
+		for _, c in ipairs(char:GetDescendants()) do
+			if c:IsA("Weld") or c:IsA("WeldConstraint") or c:IsA("RopeConstraint") or c:IsA("PrismaticConstraint") or c:IsA("CylindricalConstraint") or c:IsA("BallSocketConstraint") then
+				if c.Parent and c.Parent ~= char then
+					-- Проверяем, принадлежит ли владелец другому игроку
+					local owner = c.Parent.Parent
+					if owner and owner ~= char then
+						local plr = Players:GetPlayerFromCharacter(owner)
+						if plr and plr ~= LocalPlayer then
+							c:Destroy()
+						end
+					end
+				end
+			end
+		end
+
+		-- Телепорт вверх при захвате
+		for _, c in ipairs(char:GetChildren()) do
+			if c:IsA("WeldConstraint") or c:IsA("RopeConstraint") then
+				if c.Part1 and c.Part1 ~= root then
+					local owner = c.Part1.Parent
+					local plr = Players:GetPlayerFromCharacter(owner)
+					if plr and plr ~= LocalPlayer then
+						local orig = root.CFrame
+						root.CFrame = root.CFrame + Vector3.new(0, 1000, 0)
+						task.wait(0.05)
+						root.CFrame = orig
+						root.Velocity = Vector3.zero
+						c:Destroy()
+					end
+				end
+			end
+		end
+	end)
+end
+
+function stopAntiGrab()
+	if antiGrabConnection then antiGrabConnection:Disconnect(); antiGrabConnection = nil end
+end
+
+-- ================= ANTI-KICK =================
 function spawnAntiKick()
 	local char = LocalPlayer.Character; if not char then return end
 	local s = Instance.new("Part")
@@ -953,6 +925,8 @@ function removeAntiKick()
 	if antiKickConnection then antiKickConnection:Disconnect(); antiKickConnection = nil end
 	if antiKickShuriken then antiKickShuriken:Destroy(); antiKickShuriken = nil end
 end
+
+-- ================= ANTI-KILL =================
 function startAntiKill()
 	antiKillConnection = RunService.Heartbeat:Connect(function()
 		local char = LocalPlayer.Character; if not char then return end
@@ -970,6 +944,8 @@ end
 function stopAntiKill()
 	if antiKillConnection then antiKillConnection:Disconnect(); antiKillConnection = nil end
 end
+
+-- ================= ANTI-BRING =================
 function startAntiBring()
 	antiBringConnection = RunService.Heartbeat:Connect(function()
 		local char = LocalPlayer.Character; if not char then return end
@@ -983,7 +959,7 @@ function stopAntiBring()
 	if antiBringConnection then antiBringConnection:Disconnect(); antiBringConnection = nil end
 end
 
--- ================= АВТОМАТИЗАЦИЯ =================
+-- ================= AUTOMATION =================
 function startAutoFlingAll()
 	autoFlingConnection = RunService.Heartbeat:Connect(function()
 		for _, p in ipairs(Players:GetPlayers()) do
@@ -1050,7 +1026,7 @@ function stopAutoBringItems()
 	if autoBringConnection then autoBringConnection:Disconnect(); autoBringConnection = nil end
 end
 
--- ================= СУПЕР СИЛА =================
+-- ================= SUPER STRENGTH =================
 Workspace.ChildAdded:Connect(function(model)
 	if model.Name == "GrabParts" and superStrengthEnabled then
 		local part = model:FindFirstChild("GrabPart")
@@ -1086,24 +1062,11 @@ RunService.Heartbeat:Connect(function()
 		local h = char:FindFirstChild("Humanoid"); if h then h.JumpPower = jpValue end
 	end
 
-	-- Protect
-	if antiGrabEnabled then
-		for _, c in ipairs(char:GetChildren()) do
-			if (c:IsA("WeldConstraint") or c:IsA("RopeConstraint")) and c.Part1 and c.Part1 ~= root then
-				local tp = Players:GetPlayerFromCharacter(c.Part1.Parent)
-				if tp and tp ~= LocalPlayer then
-					local orig = root.CFrame; root.CFrame = root.CFrame + Vector3.new(0, 500, 0)
-					task.wait(); root.CFrame = orig; c:Destroy()
-				end
-			end
-		end
-	end
 	if antiBurnEnabled then
 		for _, p in ipairs(char:GetDescendants()) do
 			if p:IsA("BasePart") and p:FindFirstChild("Fire") then
 				local ext = Instance.new("Part"); ext.Size = Vector3.new(2,2,2)
-				ext.CFrame = char:FindFirstChild("HumanoidRootPart").CFrame
-				ext.Anchored = true; ext.CanCollide = false; ext.Transparency = 1; ext.Parent = Workspace
+				ext.CFrame = root.CFrame; ext.Anchored = true; ext.CanCollide = false; ext.Transparency = 1; ext.Parent = Workspace
 				for _, f in ipairs(p:GetChildren()) do if f:IsA("Fire") then f:Destroy() end end
 				task.wait(0.5); ext.CFrame = CFrame.new(0,-500,0); task.wait(0.1); ext:Destroy()
 			end
@@ -1134,8 +1097,6 @@ RunService.Heartbeat:Connect(function()
 			root.CFrame = lastStablePosition; root.Velocity = Vector3.zero
 		end
 	end
-
-	-- Attack
 	if killGrabEnabled then
 		for _, c in ipairs(char:GetChildren()) do
 			if c:IsA("WeldConstraint") and c.Part1 and c.Part1 ~= root then
